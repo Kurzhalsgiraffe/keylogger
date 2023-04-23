@@ -1,8 +1,9 @@
 from socket import socket
 
-sock = socket()
 host = "127.0.0.1"
 port = 1005
+
+sock = socket()
 sock.bind((host, port))
 
 sock.listen(5)  # listen for client connection. The number stands for: number of unaccepted connections that the system will allow before refusing new connections
@@ -18,7 +19,8 @@ while True:
         if(recv == "terminating"):
             print("Terminated client. Good bye!")
             break
+        else:
+            print(recv)
 
 conn.close()
 print("Connection closed.")
-print("Fertig")
