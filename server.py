@@ -4,6 +4,13 @@ import os
 
 key = b'\xe9\xcex8\x01\x98\xc5Z\xed\xd0F\xff\xff\xff\xff\xff'
 
+def encryption(plainText):
+    cipher = aes.new(key, aes.MODE_EAX)
+    nonce = cipher.nonce
+    plainText = bytes(plainText, "ascii")
+    cipherText, tag = cipher.encrypt_and_digest(plainText)
+    return nonce + tag + cipherText
+
 def decryption(cipherText):
     fileCounter = 1
     message = False
@@ -50,7 +57,7 @@ print('Got connection from', addr)
 
 while True:
     inpt = input("Enter command:")
-    conn.sendall(bytes(inpt, "ascii"))
+    conn.sendall(encryption(inpt))
     recv = decryption(conn.recv(1024))  #Data recieved from the socket. 1024 is the maximum amount of data to be received at once
     if recv:
         recv = str(recv)[2:-1]

