@@ -61,7 +61,7 @@ while True:
     recv = decryption(conn.recv(1024))  #Data recieved from the socket. 1024 is the maximum amount of data to be received at once
     if recv:
         recv = str(recv)[2:-1]
-        if(recv == "terminating"):
+        if(recv == "terminated"):
             print("Terminated client. Good bye!")
             break
         else:

