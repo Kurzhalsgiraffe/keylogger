@@ -30,5 +30,6 @@ def decrypt(cipherText):
     try:
         cipher.verify(sTag)
         return plainText
-    except:
-        return "Message corrupted."
+    except Exception as e:
+        print(e)
+        return None

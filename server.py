@@ -3,6 +3,8 @@ import Crypto.Cipher.AES as aes
 import os
 
 key = b'\xe9\xcex8\x01\x98\xc5Z\xed\xd0F\xff\xff\xff\xff\xff'
+host = "127.0.0.1"
+port = 1005
 
 def encryption(plainText):
     cipher = aes.new(key, aes.MODE_EAX)
@@ -34,7 +36,7 @@ def decryption(cipherText):
             cipher.verify(sTag)
             return plainText
         except:
-            return "Message corrupted."
+            return None
     else:
         try:
             cipher.verify(sTag)
@@ -42,10 +44,7 @@ def decryption(cipherText):
             file.write(plainText)
             return "New file was added."
         except:
-            return "Message corrupted."
-
-host = "127.0.0.1"
-port = 1005
+            return None
 
 sock = socket()
 sock.bind((host, port))
