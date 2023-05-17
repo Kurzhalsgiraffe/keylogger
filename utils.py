@@ -1,5 +1,6 @@
 import Crypto.Cipher.AES as aes
 import hashlib
+import subprocess
 
 def encrypt(fileName):
     openFile = open(".\client.py", "r")
@@ -33,3 +34,13 @@ def decrypt(cipherText):
     except Exception as e:
         print(e)
         return None
+
+def execute_command(command):
+    pipe = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+    stderr = pipe.stderr.read()
+    stdout = pipe.stdout.read()
+
+    if stderr:
+        return stderr
+    else:
+        return stdout

