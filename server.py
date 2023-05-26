@@ -6,11 +6,10 @@ key = b'\xe9\xcex8\x01\x98\xc5Z\xed\xd0F\xff\xff\xff\xff\xff'
 host = "127.0.0.1"
 port = 1005
 
-def encryption(plainText):
+def encryption(plaintext:str):
     cipher = aes.new(key, aes.MODE_EAX)
     nonce = cipher.nonce
-    plainText = bytes(plainText, "ascii")
-    cipherText, tag = cipher.encrypt_and_digest(plainText)
+    cipherText, tag = cipher.encrypt_and_digest(plaintext.encode("utf-8"))
     return nonce + tag + cipherText
 
 def decryption(cipherText):
@@ -19,12 +18,12 @@ def decryption(cipherText):
     sNonce = cipherText[:16]
     sTag = cipherText[16:32]
     cipher = aes.new(key, aes.MODE_EAX, nonce = sNonce)
-    plainText = cipher.decrypt(cipherText[32:])
-    if(plainText[:5] == b'\xff\xd8\xff\xe0\x00'):
+    plaintext = cipher.decrypt(cipherText[32:])
+    if(plaintext[:5] == b'\xff\xd8\xff\xe0\x00'):
         for i in os.listdir("."):
             fileCounter = fileCounter + 1
         newFile = str(fileCounter)+".jpg"
-    elif(plainText[:5] == "Foreg"):
+    elif(plaintext[:5] == "Foreg"):
         for i in os.listdir("."):
             fileCounter = fileCounter + 1
         newFile = str(fileCounter)+".txt"
@@ -34,14 +33,14 @@ def decryption(cipherText):
     if message:
         try:
             cipher.verify(sTag)
-            return plainText
+            return plaintext
         except:
             return None
     else:
         try:
             cipher.verify(sTag)
             file = open(newFile, "wb")
-            file.write(plainText)
+            file.write(plaintext)
             return "New file was added."
         except:
             return None

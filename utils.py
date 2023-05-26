@@ -2,7 +2,7 @@ import Crypto.Cipher.AES as aes
 import hashlib
 import subprocess
 
-def encrypt(fileName):
+def encrypt(filename:str):
     openFile = open(".\client.py", "r")
     fileContent = bytes(openFile.read(), encoding = "utf-8")
     #key = hashlib.sha256(fileContent).hexdigest().encode("utf8")[4:20]
@@ -10,27 +10,25 @@ def encrypt(fileName):
     cipher = aes.new(key, aes.MODE_EAX)
     nonce = cipher.nonce
 
-    if(fileName[-4:] == ".txt"):
-        file = open(fileName, "r")
-        fileData = file.read().encode("ascii")
-    elif(fileName[-4:] == ".png"):
-        file = open(fileName, "rb")
-        fileData = file.read()
+    if filename.endswith(".txt"):
+        with open(filename, "r", encoding="utf-8") as file:
+            data = file.read().encode("utf-8")
+    elif filename.endswith(".png"):
+        with open(filename, "rb") as file:
+            data = file.read()
     else:
-        fileData = fileName
+        data = filename
 
-    cipherText, tag = cipher.encrypt_and_digest(fileData)
-    return nonce + tag + cipherText
+    cipher_text, tag = cipher.encrypt_and_digest(data)
+    return nonce + tag + cipher_text
 
-def decrypt(cipherText):
+def decrypt(cipher_text):
     key = b'\xe9\xcex8\x01\x98\xc5Z\xed\xd0F\xff\xff\xff\xff\xff'
-    sNonce = cipherText[:16]
-    sTag = cipherText[16:32]
-    cipher = aes.new(key, aes.MODE_EAX, nonce = sNonce)
-    plainText = cipher.decrypt(cipherText[32:])
+    cipher = aes.new(key, aes.MODE_EAX, nonce = cipher_text[:16])
+    plaintext = cipher.decrypt(cipher_text[32:])
     try:
-        cipher.verify(sTag)
-        return plainText
+        cipher.verify(cipher_text[16:32])
+        return plaintext
     except Exception as e:
         print(e)
         return None
