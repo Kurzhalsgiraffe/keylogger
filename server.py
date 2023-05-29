@@ -8,39 +8,31 @@ key = b'\xe9\xcex8\x01\x98\xc5Z\xed\xd0F\xff\xff\xff\xff\xff'
 host = "127.0.0.1"
 port = 1005
 
-def decryption(cipherText):
-    fileCounter = 1
-    message = False
-    sNonce = cipherText[:16]
-    sTag = cipherText[16:32]
-    cipher_text = cipherText[35:]
-    cipher = aes.new(key, aes.MODE_EAX, nonce = sNonce)
-    plaintext = cipher.decrypt(cipher_text)
-    if(plaintext[:5] == b'\xff\xd8\xff\xe0\x00'):
-        for i in os.listdir("."):
-            fileCounter = fileCounter + 1
-        newFile = str(fileCounter)+".png"
-    elif(plaintext[:5] == "Foreg"):
-        for i in os.listdir("."):
-            fileCounter = fileCounter + 1
-        newFile = str(fileCounter)+".txt"
-    else:
-        message = True
+def decryption(encrypted_bytes:bytes):
+    nonce = encrypted_bytes[:16]
+    tag = encrypted_bytes[16:32]
+    ftype = encrypted_bytes[32:35].decode("utf-8")
+    cipher_text = encrypted_bytes[35:]
 
-    if message:
+    cipher = aes.new(key, aes.MODE_EAX, nonce=nonce)
+    plaintext = cipher.decrypt(cipher_text)
+
+    if ftype == "msg":
         try:
-            cipher.verify(sTag)
+            cipher.verify(tag)
             return plaintext
-        except:
+        except Exception as e:
+            print(e)
             return None
     else:
         try:
-            cipher.verify(sTag)
-            file = open(newFile, "wb")
-            file.write(plaintext)
-            return "New file was added."
-        except:
-            return None
+            cipher.verify(tag)
+            new_file_name = str(len(os.listdir("."))) + "." + ftype
+            with open(new_file_name, "wb") as file:
+                file.write(plaintext)
+        except Exception as e:
+            print(e)
+    return None
 
 sock = socket()
 sock.bind((host, port))

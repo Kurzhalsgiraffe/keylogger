@@ -17,10 +17,10 @@ def encrypt(data:bytes, ftype:str) -> bytes:
     cipher_text, tag = cipher.encrypt_and_digest(data)
     return nonce + tag + ftype.encode("utf-8") + cipher_text
 
-def decrypt(encrypted_bytes):
+def decrypt(encrypted_bytes:bytes):
     nonce = encrypted_bytes[:16]
     tag = encrypted_bytes[16:32]
-    ftype = encrypted_bytes[32:35]
+    ftype = encrypted_bytes[32:35].decode("utf-8")
     cipher_text = encrypted_bytes[35:]
 
     cipher = aes.new(key, aes.MODE_EAX, nonce=nonce)
