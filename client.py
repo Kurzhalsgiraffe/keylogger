@@ -7,7 +7,6 @@ import pyautogui
 import socket
 import time
 import utils
-
 from datetime import datetime, timedelta
 from functools import partial
 from PIL import ImageGrab

@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-import Crypto.Cipher.AES as aes
-import os
 import utils
-
 from socket import socket
 
 key = b'\xe9\xcex8\x01\x98\xc5Z\xed\xd0F\xff\xff\xff\xff\xff'
