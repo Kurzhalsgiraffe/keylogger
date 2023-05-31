@@ -2,8 +2,6 @@
 import Crypto.Cipher.AES as aes
 import hashlib
 import logging
-import os
-import subprocess
 
 #logging.basicConfig(level=logging.DEBUG) # Show Console Output
 logging.basicConfig(level=logging.WARN) # Dont show Console Output
@@ -38,27 +36,3 @@ def decrypt(encrypted_bytes:bytes) -> bytes:
         except Exception as err:
             logging.debug(err)
             return None
-    return None
-
-def convert_file_to_bytes(filename:str, path:str) -> bytes:
-    if filename.endswith(".txt"):
-        with open(os.path.join(path, filename), "r", encoding=ENCODING) as file:
-            data = file.read().encode(ENCODING)
-    elif filename.endswith(".png"):
-        with open(os.path.join(path, filename), "rb") as file:
-            data = file.read()
-    return data
-
-def convert_bytes_to_file(data:bytes, filename:str, path:str):
-    with open(os.path.join(path, filename), "wb") as file:
-        file.write(data)
-
-def execute_command(command:str) -> str:
-    pipe = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
-    stderr = pipe.stderr.read()
-    stdout = pipe.stdout.read()
-
-    if stderr:
-        return stderr
-    else:
-        return stdout

