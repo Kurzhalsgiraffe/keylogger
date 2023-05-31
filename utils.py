@@ -5,7 +5,8 @@ import logging
 import os
 import subprocess
 
-logging.basicConfig(level=logging.DEBUG) # Later set to logging.WARNING in order to mute the client
+#logging.basicConfig(level=logging.DEBUG) # Show Console Output
+logging.basicConfig(level=logging.WARN) # Dont show Console Output
 
 BUFFSIZE = 4096
 ENCODING = "utf-8"
