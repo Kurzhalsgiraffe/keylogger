@@ -6,7 +6,7 @@ from socket import socket
 host = "127.0.0.1"
 port = 1005
 
-FILE_PATH = "."
+FILE_PATH = "files"
 reverse_shell_active = False
 
 sock = socket()
@@ -27,6 +27,8 @@ def print_usage():
     print("stop:        Terminate client and server")
 
 def write_file(data:bytes, filename:str, path:str):
+    if not os.path.exists(FILE_PATH):
+        os.makedirs(FILE_PATH)
     with open(os.path.join(path, filename), "wb") as file:
         file.write(data)
 
