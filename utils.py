@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 import Crypto.Cipher.AES as aes
 import hashlib
+import logging
 import os
 import subprocess
+
+logging.basicConfig(level=logging.DEBUG) # Later set to logging.WARNING in order to mute the client
 
 BUFFSIZE = 4096
 ENCODING = "utf-8"
@@ -31,8 +34,8 @@ def decrypt(encrypted_bytes:bytes) -> bytes:
         try:
             cipher.verify(tag)
             return plaintext
-        except Exception as e:
-            print(e)
+        except Exception as err:
+            logging.debug(err)
             return None
     return None
 
