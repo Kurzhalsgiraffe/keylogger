@@ -2,7 +2,6 @@
 import utils
 from socket import socket
 
-key = b'\xe9\xcex8\x01\x98\xc5Z\xed\xd0F\xff\xff\xff\xff\xff'
 host = "127.0.0.1"
 port = 1005
 

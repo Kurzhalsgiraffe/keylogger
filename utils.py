@@ -14,8 +14,8 @@ ENCODING = "utf-8"
 key = b'\xe9\xcex8\x01\x98\xc5Z\xed\xd0F\xff\xff\xff\xff\xff'
 
 def encrypt(data:bytes) -> bytes:
-    openFile = open(".\client.py", "r")
-    fileContent = bytes(openFile.read(), encoding = ENCODING)
+    with open(".\client.py", "r") as file:
+        fileContent = bytes(file.read(), encoding = ENCODING)
     #key = hashlib.sha256(fileContent).hexdigest().encode("utf8")[4:20]
 
     cipher = aes.new(key, aes.MODE_EAX)
