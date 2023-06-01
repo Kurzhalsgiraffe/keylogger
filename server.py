@@ -38,34 +38,30 @@ class CommandAndControl:
             logging.debug(err)
     
     def receive_file(self, header):
-        number_of_chunks = header["number_of_chunks"]
-        filename = header["filename"]
-        number_of_files_left = header["number_of_files_left"]
-        
-        while number_of_files_left > 0:          
-            data = b""
-            logging.info(f"Receiving File: {filename} Number of Chunks: {number_of_chunks}")
+        receiving = True
 
-            for _ in range(number_of_chunks):
+        while receiving:
+            data = b""
+            logging.info(f"Receiving File: {header['filename']} Number of Chunks: {header['number_of_chunks']}")
+
+            for _ in range(header['number_of_chunks']):
                 recv = self.receive_from_client()
                 if recv:
                     data += recv
 
-            self.write_file(data=data, filename=filename)
-            number_of_files_left -= 1
-            logging.info(f"File received, {number_of_files_left} files left")
+            self.write_file(data, header['filename'])
+            logging.info(f"File received, {header['number_of_files_left']} files left")
             
-            if number_of_files_left > 0:
+            if header['number_of_files_left'] == 0:
+                receiving = False
+            else:
                 recv = self.receive_from_client()
                 if recv:
-                    header = split_header(recv)
-                    number_of_chunks = header["number_of_chunks"]
-                    filename = header["filename"]
-                    number_of_files_left = header["number_of_files_left"]
+                    header = covert_header_to_dict(recv)
         
     def receive_message(self, header):
         msg = b""
-        for i in range(header["number_of_chunks"]):
+        for _ in range(header["number_of_chunks"]):
             recv = command_and_control.receive_from_client()
             if recv:
                 msg += recv
@@ -90,7 +86,7 @@ class CommandAndControl:
             file.write(data)
 
 #--------------- FUNCTIONS ---------------#
-def split_header(header: bytes) -> dict:
+def covert_header_to_dict(header: bytes) -> dict:
     l = header.decode(utils.ENCODING).split("__")
 
     number_of_chunks = int(l[0]) if l[0] else None
@@ -122,7 +118,7 @@ if __name__ == "__main__":
 
                 header_binary = command_and_control.receive_from_client()
                 if header_binary:
-                    header = split_header(header_binary)
+                    header = covert_header_to_dict(header_binary)
 
                     if header["filename"]:
                         command_and_control.receive_file(header)
@@ -143,7 +139,7 @@ if __name__ == "__main__":
                         elif msg == "unknown command":
                             logging.info(f"unknown command: {inpt}")
                         else:
-                            logging.info(f"unknown answer from client: {msg}")
+                            logging.info(msg)
 
     command_and_control.close_connection()
     logging.info("good bye")
