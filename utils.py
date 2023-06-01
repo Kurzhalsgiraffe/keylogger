@@ -3,8 +3,8 @@ import Crypto.Cipher.AES as aes
 import hashlib
 import logging
 
-#logging.basicConfig(level=logging.DEBUG) # Show Console Output
-logging.basicConfig(level=logging.WARN) # Dont show Console Output
+logging.basicConfig(level=logging.INFO) # Show Console Output
+#logging.basicConfig(level=logging.WARN) # Dont show Console Output
 
 BUFFSIZE = 4096
 ENCODING = "utf-8"

