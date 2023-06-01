@@ -241,9 +241,12 @@ def read_file_and_delete(filename:str) -> bytes:
     return data
 
 def execute_command(command:str) -> str:
-    pipe = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
-    stderr = pipe.stderr.read()
-    stdout = pipe.stdout.read()
+    try:
+        pipe = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+        stderr = pipe.stderr.read()
+        stdout = pipe.stdout.read()
+    except UnicodeDecodeError as err:
+        stderr = str(err)
 
     if stderr:
         return stderr
