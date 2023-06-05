@@ -16,10 +16,6 @@ def encrypt(data:bytes) -> bytes:
     if not KEY:
         generate_key()
 
-    with open(".\client.py", "r") as file:
-        file_content = bytes(file.read(), encoding = ENCODING)
-    #key = hashlib.sha256(file_content).hexdigest().encode("utf8")[4:20]
-
     cipher = aes.new(KEY, aes.MODE_EAX)
     nonce = cipher.nonce
     cipher_text, tag = cipher.encrypt_and_digest(data)

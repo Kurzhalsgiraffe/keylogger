@@ -68,7 +68,7 @@ class CommandAndControl:
         return msg.decode(utils.ENCODING)
     
 #--------------- CLI METHODS ---------------#
-    def print_usage():
+    def print_usage(self):
         logging.info("Usage:")
         logging.info("help:        Print this usage message")
         logging.info("activate:    Activate the logging")
