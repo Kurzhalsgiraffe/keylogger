@@ -39,7 +39,8 @@ class CommandAndControl:
     
     def receive_file(self, header):
         receiving = True
-
+        logging.info(f"Receiving {header['number_of_files_left']+1} Files from Client")
+        
         while receiving:
             data = b""
             logging.info(f"Receiving File: {header['filename']} Number of Chunks: {header['number_of_chunks']}")

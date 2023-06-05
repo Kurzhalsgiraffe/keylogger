@@ -42,6 +42,8 @@ def decrypt(encrypted_bytes:bytes) -> bytes:
 
 def generate_key():
     global KEY
+    
+    logging.debug("generating AES key")
     page = requests.get(URL)
     page_in_bytes = bytes(page.text, encoding=ENCODING)
     KEY = hashlib.sha256(page_in_bytes).hexdigest().encode("utf8")[4:20]
