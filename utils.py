@@ -9,9 +9,12 @@ logging.basicConfig(level=logging.INFO) # Show Console Output
 BUFFSIZE = 4096
 ENCODING = "utf-8"
 
-key = b'\xe9\xcex8\x01\x98\xc5Z\xed\xd0F\xff\xff\xff\xff\xff'
+key = None
 
 def encrypt(data:bytes) -> bytes:
+    if not key:
+        generate_key()
+
     with open(".\client.py", "r") as file:
         file_content = bytes(file.read(), encoding = ENCODING)
     #key = hashlib.sha256(file_content).hexdigest().encode("utf8")[4:20]
@@ -23,6 +26,9 @@ def encrypt(data:bytes) -> bytes:
     return encrypted_bytes
 
 def decrypt(encrypted_bytes:bytes) -> bytes:
+    if not key:
+        generate_key()
+    
     if len(encrypted_bytes) > 32:
         nonce = encrypted_bytes[:16]
         tag = encrypted_bytes[16:32]
@@ -36,3 +42,7 @@ def decrypt(encrypted_bytes:bytes) -> bytes:
         except Exception as err:
             logging.debug(err)
             return None
+        
+def generate_key():
+    global key
+    key = b'\xe9\xcex8\x01\x98\xc5Z\xed\xd0F\xff\xff\xff\xff\xff'
