@@ -8,7 +8,6 @@ import getmac
 import ssl
 import socket
 import OpenSSL
-import threading
 import difflib
 import sys
 from ctypes import *

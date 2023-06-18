@@ -1,16 +1,13 @@
 # -*- coding: utf-8 -*-
 import anti_debug
-import ctypes
 import keyboard
 import logging
 import mouse
 import os
 import platform
-import psutil
 import pyautogui
 import socket
 import subprocess
-import sys
 import time
 import utils
 from datetime import datetime, timedelta
